@@ -16,3 +16,11 @@ jsonschema>=4.0.0
 # Utilities
 tqdm>=4.0.0
 python-dotenv>=1.0.0
+
+# NEW: Video Processing
+opencv-python>=4.8.0
+numpy>=1.24.0
+Pillow>=10.0.0
+
+# NEW: Preview Server (optional)
+# flask>=3.0.0  # Uncomment if using Flask-based preview

@@ -35,10 +35,46 @@ scenes:
 # Output Settings
 output:
   path: "/home/v-tangxin/GUI/agent/output"
-  format: "a2ui_json"
+  format: "legacy"  # "legacy" | "a2ui_standard"
 
 # Pipeline Settings
 pipeline:
   batch_size: 10
   max_retries: 3
   retry_delay: 1.0
+
+# NEW: Video Processing Settings
+video:
+  enabled: false
+  # Primary video path pattern (merged videos)
+  primary_video_pattern: "Timeseries Data + Scene Video/*/*.mp4"
+  # Fallback segmented video pattern
+  fallback_video_pattern: "raw_data/*/Neon Scene Camera v1 ps*.mp4"
+  # Number of frames to extract per recommendation
+  num_frames: 3
+
+# NEW: Visual Context Settings
+visual_context:
+  # Mode: "direct" (pass images to VLM) | "description" (generate text description)
+  mode: "description"
+  # Cache size for visual context
+  cache_size: 100
+  # Image encoding quality (1-100, for JPEG)
+  image_quality: 85
+  # Image detail level for VLM: "low" | "high" | "auto"
+  image_detail: "auto"
+
+# NEW: Prompt Strategy Settings
+prompt:
+  # Strategy: "v1_baseline" | "v2_google_gui" | "v3_with_visual"
+  strategy: "v1_baseline"
+  # Path to Google GUI prompt template (for v2_google_gui)
+  google_gui_template: null
+
+# NEW: Preview Server Settings
+preview:
+  enabled: true
+  host: "0.0.0.0"
+  port: 8080
+  # Auto-reload on file changes
+  auto_reload: true

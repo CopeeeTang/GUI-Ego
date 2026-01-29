@@ -9,17 +9,8 @@ from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Iterator
 
-
-@dataclass
-class Recommendation:
-    """单条推荐"""
-    type: str
-    content: str
-    start_time: float
-    end_time: float
-    time_interval: list[float] | None = None
-    object_list: dict | list | None = None
-    is_accepted: bool = False
+# Import unified schema (single source of truth)
+from .schema import Recommendation, SceneConfig, get_allowed_components
 
 
 @dataclass
@@ -29,15 +20,6 @@ class TimeSegment:
     end_time: float
     recommendations: list[Recommendation] = field(default_factory=list)
     accepted_recommendations: list[Recommendation] = field(default_factory=list)
-
-
-@dataclass
-class SceneConfig:
-    """场景配置"""
-    name: str
-    start_time: float
-    end_time: float
-    components: list[str]
 
 
 class DataLoader:
@@ -52,15 +34,15 @@ class DataLoader:
         self.scenes = {
             "navigation": SceneConfig(
                 name="navigation",
+                allowed_components=["map_card", "ar_label", "direction_arrow", "comparison_card"],
                 start_time=726.1,
                 end_time=1533.3,
-                components=["map_card", "ar_label", "direction_arrow", "comparison_card"],
             ),
             "shopping": SceneConfig(
                 name="shopping",
+                allowed_components=["comparison_card", "nutrition_card", "price_calculator", "ar_label"],
                 start_time=3307.3,
                 end_time=4703.1,
-                components=["comparison_card", "nutrition_card", "price_calculator", "ar_label"],
             ),
         }
 
@@ -84,6 +66,7 @@ class DataLoader:
             data = json.load(f)
 
         segments = []
+        rec_counter = 0
         for item in data:
             segment = TimeSegment(
                 start_time=item["start_time"],
@@ -92,7 +75,9 @@ class DataLoader:
 
             # 解析推荐列表
             for rec in item.get("recommendation_list", []):
+                rec_counter += 1
                 segment.recommendations.append(Recommendation(
+                    id=f"rec_{rec_counter}",
                     type=rec["type"],
                     content=rec["content"],
                     start_time=item["start_time"],
@@ -101,12 +86,13 @@ class DataLoader:
 
             # 解析接受的推荐
             for rec in item.get("accepted_recommendation_list", []):
+                rec_counter += 1
                 segment.accepted_recommendations.append(Recommendation(
+                    id=f"rec_{rec_counter}",
                     type=rec["type"],
                     content=rec.get("original_content", rec.get("content", "")),
                     start_time=item["start_time"],
                     end_time=item["end_time"],
-                    time_interval=rec.get("time_interval"),
                     object_list=rec.get("object_list"),
                     is_accepted=True,
                 ))

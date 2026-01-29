@@ -2,45 +2,184 @@
 
 将智能眼镜多模态数据中的 AI 推荐转换为 A2UI 格式 JSON，用于 Generative UI 研究。
 
-## Overview
+## 🚀 Quick Start
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Input                                    │
-│  annotation_2.2_*.json  →  推荐内容 + 类型 + 时间范围             │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────────┐
-│                    Scene Classification                          │
-│  根据时间范围判断场景: navigation (726-1533s) / shopping (3307-4703s) │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────────┐
-│                 Step 1: Component Selection                      │
-│  LLM 从场景组件库中选择最合适的 UI 组件                            │
-│  Prompt: COMPONENT_SELECTION_PROMPT                              │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────────┐
-│                   Step 2: Props Filling                          │
-│  LLM 根据组件 Schema 填充 props                                   │
-│  Prompt: PROPS_FILLING_PROMPT                                    │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────────┐
-│                   Step 3: Validation                             │
-│  校验生成的 JSON 符合 A2UI Schema                                 │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────────┐
-│                         Output                                   │
-│  A2UI JSON  →  /home/v-tangxin/GUI/agent/output/                 │
-└─────────────────────────────────────────────────────────────────┘
+```bash
+cd /home/v-tangxin/GUI
+source ml_env/bin/activate
+
+# 安装依赖
+pip install -r agent/requirements.txt
+
+# 运行 Pipeline (默认 v1_baseline)
+python -m agent.src.pipeline --limit 10
+
+# 使用视觉上下文增强
+python -m agent.src.pipeline --strategy v3_with_visual --enable-visual --limit 5
+
+# 启动预览服务器
+python -m agent.preview.server --port 8080
 ```
 
 ---
 
-## Input
+## 📊 Pipeline 架构
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         Input                                    │
+│  annotation_2.2_*.json + 视频文件 (可选)                          │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                    ┌─────────┴─────────┐
+                    │  --enable-visual  │
+                    └─────────┬─────────┘
+                              │
+        ┌─────────────────────┼─────────────────────┐
+        │                     │                     │
+        ▼                     ▼                     ▼
+┌───────────────┐    ┌───────────────┐    ┌───────────────┐
+│ v1_baseline   │    │ v2_google_gui │    │ v3_with_visual│
+│ 两步法        │    │ 端到端(预留)   │    │ +视觉上下文   │
+│               │    │               │    │               │
+│ component_    │    │ 用户提供      │    │ 视频帧提取    │
+│ selector      │    │ Prompt模板    │    │ VLM描述生成   │
+│ + props_filler│    │               │    │ 端到端生成    │
+└───────────────┘    └───────────────┘    └───────────────┘
+        │                     │                     │
+        └─────────────────────┼─────────────────────┘
+                              ▼
+                    ┌─────────────────┐
+                    │ A2UI Converter  │ (可选: --output-format a2ui_standard)
+                    └─────────────────┘
+                              │
+                              ▼
+                    ┌─────────────────┐
+                    │     Output      │
+                    │  JSON + Preview │
+                    └─────────────────┘
+```
+
+---
+
+## 📁 项目结构
+
+```
+/home/v-tangxin/GUI/agent/
+├── config.yaml                    # 配置文件
+├── requirements.txt               # 依赖列表
+│
+├── src/
+│   ├── schema.py                  # ⭐ 统一数据模型 (单一数据源)
+│   ├── data_loader.py             # 数据加载器
+│   ├── llm_client.py              # LLM/VLM 客户端
+│   ├── pipeline.py                # ⭐ 主入口
+│   ├── schema_validator.py        # JSON 校验器
+│   │
+│   ├── component_selector.py      # V1: Step 1 组件选择
+│   ├── props_filler.py            # V1: Step 2 Props 填充
+│   │
+│   ├── prompts/                   # ⭐ Prompt 策略模式
+│   │   ├── base.py                # 策略基类
+│   │   ├── v1_baseline.py         # 两步法封装
+│   │   ├── v2_google_gui.py       # Google GUI (预留)
+│   │   └── v3_with_visual.py      # 视觉增强版
+│   │
+│   ├── video/                     # ⭐ 视频处理
+│   │   ├── extractor.py           # 帧提取器
+│   │   └── visual_context.py      # VLM 上下文生成
+│   │
+│   └── a2ui/                      # ⭐ A2UI 格式转换
+│       ├── converter.py           # 组件转换器
+│       └── message_builder.py     # 消息构建器
+│
+├── schemas/
+│   └── a2ui_components.json       # 组件 Schema
+│
+├── preview/
+│   ├── server.py                  # HTTP 预览服务器
+│   └── static/                    # (待填充) Lit 渲染器
+│
+└── output/                        # 生成的 JSON
+```
+
+---
+
+## 🎯 三种 Prompt 策略
+
+| 策略 | 说明 | 视觉支持 | 使用场景 |
+|------|------|----------|----------|
+| `v1_baseline` | 两步法 (选组件→填属性) | ❌ | 基准对比 |
+| `v2_google_gui` | 端到端生成 | ✅ | 需用户提供 Prompt |
+| `v3_with_visual` | 带视觉上下文的端到端 | ✅ | 视频+推荐联合生成 |
+
+### 使用示例
+
+```bash
+# 策略 1: 基准两步法
+python -m agent.src.pipeline --strategy v1_baseline --limit 10
+
+# 策略 3: 视觉增强 (description 模式)
+python -m agent.src.pipeline --strategy v3_with_visual --enable-visual --visual-mode description --limit 5
+
+# 策略 3: 视觉增强 (direct 模式 - 直接传图)
+python -m agent.src.pipeline --strategy v3_with_visual --enable-visual --visual-mode direct --limit 5
+
+# 策略对比实验
+python -m agent.src.pipeline --compare v1_baseline v3_with_visual --limit 5
+```
+
+---
+
+## 🎬 视觉上下文
+
+### 工作流程
+
+```
+视频文件 → 提取 3 帧 (等间隔) → VLM 生成描述 → 注入 Prompt
+```
+
+### 两种模式
+
+| 模式 | 说明 | Token 消耗 |
+|------|------|-----------|
+| `description` | 先用 VLM 生成文本描述 | ~500 tokens |
+| `direct` | 直接传图给多模态 LLM | ~2300 tokens (3帧) |
+
+---
+
+## 🖥️ 预览服务器
+
+```bash
+# 启动服务器
+python -m agent.preview.server --port 8080
+
+# 浏览器访问
+http://localhost:8080
+```
+
+**当前状态**: 使用内联 CSS 渲染，A2UI Lit 渲染器待集成。
+
+---
+
+## 📊 CLI 参数一览
+
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| `--strategy` | `v1_baseline` | Prompt 策略 |
+| `--enable-visual` | `false` | 启用视频帧提取 |
+| `--visual-mode` | `description` | 视觉模式 (direct/description) |
+| `--output-format` | `legacy` | 输出格式 (legacy/a2ui_standard) |
+| `--compare` | - | 对比多个策略 |
+| `--limit` | `50` | 处理数量 |
+| `--scenes` | `navigation shopping` | 场景 |
+| `--data-path` | `/home/v-tangxin/GUI/data/ego-dataset` | 数据集路径 |
+| `--output-path` | `/home/v-tangxin/GUI/agent/output` | 输出路径 |
+| `--participant` | `P1_YuePan` | 被试 ID |
+
+---
+
+## 📥 Input
 
 ### 数据源
 
@@ -77,7 +216,7 @@
 
 ---
 
-## Output
+## 📤 Output
 
 ### 文件路径
 
@@ -117,7 +256,7 @@
 
 ---
 
-## Component Library
+## 🧩 Component Library
 
 ### 导航场景 (Navigation)
 
@@ -139,119 +278,7 @@
 
 ---
 
-## Prompts
-
-### Step 1: Component Selection Prompt
-
-**文件**: `src/component_selector.py`
-
-**System Prompt**:
-```
-你是一个 UI 组件选择专家，只返回 JSON 格式的结果。
-```
-
-**User Prompt** (`COMPONENT_SELECTION_PROMPT`):
-```
-你是一个智能眼镜 UI 生成专家。根据用户场景和 AI 推荐内容，选择最合适的 UI 组件。
-
-## 当前场景: {scene_name}
-
-## 可用组件:
-{component_list}
-
-## 任务
-分析以下 AI 推荐内容，选择最合适的 UI 组件类型。
-
-## AI 推荐
-- 类型: {recommendation_type}
-- 内容: {recommendation_content}
-
-## 输出要求
-返回 JSON 格式:
-{
-    "selected_component": "组件类型名称",
-    "reasoning": "选择理由（简短）",
-    "confidence": 0.0-1.0 的置信度
-}
-```
-
-**变量说明**:
-- `{scene_name}`: 场景名称 (navigation / shopping)
-- `{component_list}`: 场景可用组件列表及其描述
-- `{recommendation_type}`: 推荐类型
-- `{recommendation_content}`: 推荐内容
-
-**输出示例**:
-```json
-{
-  "selected_component": "ar_label",
-  "reasoning": "AR 标签适合在物理对象上悬浮显示相关信息",
-  "confidence": 0.95
-}
-```
-
----
-
-### Step 2: Props Filling Prompt
-
-**文件**: `src/props_filler.py`
-
-**System Prompt**:
-```
-你是一个 UI 内容生成专家，只返回 JSON 格式的 props 对象。
-```
-
-**User Prompt** (`PROPS_FILLING_PROMPT`):
-```
-你是一个智能眼镜 UI 内容生成专家。根据 AI 推荐内容，填充 UI 组件的 props。
-
-## 组件类型: {component_type}
-
-## 组件 Schema:
-必需字段: {required_fields}
-可用属性:
-{properties}
-
-## 示例:
-```json
-{example}
-```
-
-## AI 推荐
-- 类型: {recommendation_type}
-- 内容: {recommendation_content}
-
-## 任务
-根据推荐内容，生成该组件的 props。确保：
-1. 包含所有必需字段
-2. 内容与推荐语义一致
-3. 适合智能眼镜的简洁显示
-
-## 输出
-返回 JSON 格式的 props 对象（不需要 type 和 id，只需要 props 内容）:
-```
-
-**变量说明**:
-- `{component_type}`: 组件类型 (ar_label, map_card, etc.)
-- `{required_fields}`: 必需字段列表
-- `{properties}`: 属性描述
-- `{example}`: 示例 JSON
-- `{recommendation_type}`: 推荐类型
-- `{recommendation_content}`: 推荐内容
-
-**输出示例** (ar_label):
-```json
-{
-  "text": "设计者",
-  "subtext": "点击查看详情",
-  "icon": "info",
-  "anchor": {"type": "object", "target": "stadium"}
-}
-```
-
----
-
-## LLM Configuration
+## ⚙️ LLM Configuration
 
 | 参数 | Step 1 (Selection) | Step 2 (Props) |
 |------|---------------------|----------------|
@@ -262,130 +289,12 @@
 
 ---
 
-## Usage
+## ✅ 已完成事项
 
-### 安装依赖
-
-```bash
-cd /home/v-tangxin/GUI
-source ml_env/bin/activate
-pip install -r agent/requirements.txt
-```
-
-### 运行 Pipeline
-
-```bash
-cd agent
-
-# MVP 测试 (10条)
-python -m src.pipeline --limit 10 --scenes navigation shopping
-
-# 完整运行 (50条)
-python -m src.pipeline --limit 50 --scenes navigation shopping
-
-# 仅导航场景
-python -m src.pipeline --limit 20 --scenes navigation
-```
-
-### 命令行参数
-
-| 参数 | 默认值 | 说明 |
-|------|--------|------|
-| `--data-path` | `/home/v-tangxin/GUI/data/ego-dataset` | 数据集路径 |
-| `--output-path` | `/home/v-tangxin/GUI/agent/output` | 输出路径 |
-| `--participant` | `P1_YuePan` | 被试 ID |
-| `--scenes` | `navigation shopping` | 处理场景 |
-| `--limit` | `50` | 最大处理数量 |
+- [x] 复制 A2UI Lit 渲染器到 `preview/static/`
+- [x] 添加 A2UI v0.9 Schema 文件到 `schemas/`
+- [x] 集成 Google GUI Prompt 模板到 `v2_google_gui.py`
 
 ---
 
-## Experiment Variations
-
-### 可调整的 Prompt 变量
-
-| 位置 | 变量 | 实验方向 |
-|------|------|----------|
-| `component_selector.py` | `COMPONENT_DEFINITIONS` | 增减组件库、修改组件描述 |
-| `component_selector.py` | `COMPONENT_SELECTION_PROMPT` | 修改选择策略、增加约束 |
-| `props_filler.py` | `COMPONENT_SCHEMAS` | 修改 props 结构、增加字段 |
-| `props_filler.py` | `PROPS_FILLING_PROMPT` | 修改填充策略、增加上下文 |
-
-### 可添加的 Context
-
-1. **视觉上下文**: 添加视频帧描述 (VLM 生成)
-2. **时序上下文**: 添加前后推荐的关联
-3. **用户接受/拒绝标签**: 使用 `accepted_recommendation_list` 作为反馈
-4. **眼动数据**: 添加 gaze 注视点信息
-
-### Prompt 对比实验示例
-
-```python
-# Variant A: 基础 prompt (当前)
-PROMPT_A = "根据推荐内容，选择最合适的 UI 组件..."
-
-# Variant B: 增加视觉上下文
-PROMPT_B = """
-根据推荐内容和当前视觉场景，选择最合适的 UI 组件。
-
-## 视觉上下文
-{visual_description}
-
-## AI 推荐
-...
-"""
-
-# Variant C: 增加用户偏好
-PROMPT_C = """
-根据推荐内容和用户历史偏好，选择最合适的 UI 组件。
-
-## 用户接受率
-- ar_label: 80%
-- map_card: 60%
-...
-"""
-```
-
----
-
-## File Structure
-
-```
-/home/v-tangxin/GUI/agent/
-├── src/
-│   ├── __init__.py
-│   ├── pipeline.py           # 主 Pipeline
-│   ├── data_loader.py        # 数据加载 + 场景分类
-│   ├── component_selector.py # Step 1: LLM 组件选择
-│   ├── props_filler.py       # Step 2: LLM Props 填充
-│   ├── schema_validator.py   # Step 3: Schema 校验
-│   └── llm_client.py         # Azure GPT-4o 客户端
-├── schemas/
-│   └── a2ui_components.json  # A2UI Schema 定义
-├── output/                   # 生成的 A2UI JSON
-├── config.yaml               # 配置文件
-├── requirements.txt          # 依赖
-└── README.md                 # 本文档
-```
-
----
-
-## Metrics
-
-### 当前 MVP 结果
-
-| 指标 | 数值 |
-|------|------|
-| 处理速度 | ~2.3s/条 |
-| 成功率 | 100% (5/5) |
-| 组件选择 confidence | 0.9-0.95 |
-
-### 可收集的评估指标
-
-1. **组件选择准确率**: 人工标注 ground truth 对比
-2. **Props 填充质量**: 语义一致性评分
-3. **用户接受率预测**: 对比 accepted_recommendation_list
-4. **多样性**: 组件类型分布
-
----
-
-*Created: 2026-01-28*
+*Updated: 2025-01-29*
