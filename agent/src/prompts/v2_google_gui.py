@@ -192,7 +192,7 @@ class GoogleGUIPromptStrategy(PromptStrategy):
         logger.info(f"Generating component using Google GUI approach for recommendation {recommendation.id}")
 
         result = self._llm_client.complete_json(
-            system_prompt="You are an expert UI generator for smart glasses. Generate complete UI components in JSON format.",
+            system_prompt=GOOGLE_A2UI_SYSTEM_PROMPT,
             user_prompt=prompt,
             temperature=0.5,
         )

@@ -139,16 +139,7 @@ Keep the description concise (2-3 sentences)."""
         Returns:
             VisualContext object containing the generated context.
         """
-        from .extractor import FrameExtractor
-
         # Convert frames to base64
-        # Create a temporary extractor just for the conversion utility
-        temp_extractor = type('FrameExtractor', (), {
-            'frames_to_base64': lambda self, frames, format="jpeg", quality=85:
-                self._convert_frames(frames, format, quality)
-        })()
-
-        # Actually use the real conversion
         base64_frames = self._frames_to_base64(frames)
 
         if self.mode == VisualContextMode.DIRECT:

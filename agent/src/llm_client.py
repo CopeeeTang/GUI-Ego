@@ -96,7 +96,12 @@ class LLMClient:
             max_tokens=max_tokens,
             response_format={"type": "json_object"},
         )
-        return json.loads(response)
+        try:
+            return json.loads(response)
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse JSON response: {e}")
+            logger.error(f"Response content (first 500 chars): {response[:500]}")
+            raise ValueError(f"Invalid JSON from LLM: {str(e)}")
 
     def complete_with_images(
         self,
