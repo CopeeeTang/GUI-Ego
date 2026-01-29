@@ -1,0 +1,44 @@
+# Smart Glasses Generative UI Pipeline Configuration
+
+# Azure OpenAI Settings
+azure:
+  endpoint: ${AZURE_OPENAI_ENDPOINT}
+  api_key: ${AZURE_OPENAI_API_KEY}
+  api_version: "2024-02-15-preview"
+  deployment_name: "gpt-4o"
+
+# Data Paths
+data:
+  base_path: "/home/v-tangxin/GUI/data/ego-dataset"
+  annotation_file: "annotation_2.2_P1_YuePan.json"
+  participant: "P1_YuePan"
+
+# Scene Time Ranges (P1_YuePan)
+scenes:
+  navigation:
+    start_time: 726.1
+    end_time: 1533.3
+    components:
+      - map_card
+      - ar_label
+      - direction_arrow
+      - comparison_card
+  shopping:
+    start_time: 3307.3
+    end_time: 4703.1
+    components:
+      - comparison_card
+      - nutrition_card
+      - price_calculator
+      - ar_label
+
+# Output Settings
+output:
+  path: "/home/v-tangxin/GUI/agent/output"
+  format: "a2ui_json"
+
+# Pipeline Settings
+pipeline:
+  batch_size: 10
+  max_retries: 3
+  retry_delay: 1.0
