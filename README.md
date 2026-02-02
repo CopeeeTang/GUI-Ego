@@ -1,71 +1,257 @@
-# Smart Glasses GenUI 数据加工与生成系统 (Smart Glasses GenUI Data Processing System)
+# Smart Glasses GenUI 数据加工与生成系统
 
-**Last Updated:** 2026-01-27
+**Last Updated:** 2026-02-02
 
-本项目是一个结合了 **Research (调研验证)** 与 **Engineering (数据工程)** 的混合型项目。主要目标是基于 Ego-centric 视频数据集（P1_YuePan），利用 Agentic Workflow 和 GPT-4o 生成符合 A2UI 协议的智能眼镜 GUI 数据，以验证 Smart Glasses GenUI 的生成范式。
-
----
-
-## 📚 1. 研究背景与动机 (Research Context)
-
-我们通过调研发现，现有的 Generative UI (如 Google GenUI) 主要针对 Web 界面，直接应用到 Smart Glasses 场景存在显著 Gap。
-
-*   **核心 Gap**: WebUI (鼠标/触控/大屏) vs Smart Glasses (注视/语音/透视/小屏)。
-*   **研究方向**: 探索适合智能眼镜的 "Minimal", "Anchored", "Context-aware" 的 UI 生成范式。
-
-### 关键调研文档
-*   [**Gap 分析与场景定义**](survey/2026-01-18%20example.md): 详细分析了 P1_YuePan 数据集中的意图分布，定义了短期 vs 长期交互模式，以及 Gap 分析。
-*   [**研究问题 (Research Question)**](Research%20Question.md): 明确了 Pipeline 架构、技术决策理由和组件库 Schema 设计。
-*   [**A2UI 扩展协议**](A2UI-SmartGlasses-Extension.md): 在 Google A2UI 协议基础上，针对 AR 场景扩展了 `spatial` (空间锚定) 和 `attention` (注意力管理) 字段。
+基于 Ego-centric 视频数据集，利用多模态 LLM 生成符合 A2UI 协议的智能眼镜 GUI 数据。
 
 ---
 
-## 🗄️ 2. 数据集 (Dataset)
+## 🚀 Quick Start
 
-本项目使用 **P1_YuePan** 数据集作为原始输入。
-*   **内容**: 包含 3.17 小时的 Ego-centric 视频流、眼动数据 (Gaze) 和用户活动标签。
-*   **存放位置**: 数据实体位于 Second Brain，本项目通过 Symlink 引用至 `data/` 目录。
-*   **样本分析**: 参见 `survey/2026-01-18 example.md` 中的 "数据集分析" 章节。
+```bash
+cd /home/v-tangxin/GUI
+source ml_env/bin/activate
 
----
+# 运行 Pipeline (默认使用 Azure GPT-4o)
+python3 -m agent.src.pipeline --limit 10
 
-## 🛠️ 3. 核心方法论 (Methodology)
+# 使用 Gemini
+python3 -m agent.src.pipeline --model gemini:gemini-2.5-pro --limit 5
 
-为了批量生产高质量的 GUI 数据，我们设计了一套 **Agentic Data Generation Pipeline**：
+# 使用 Claude
+python3 -m agent.src.pipeline --model claude:claude-sonnet-4-5 --limit 5
 
-### 3.1 工作流 (Agent Workflow)
-借鉴 Google 的设计工作流，构建一个自动化 Agent 体系：
-1.  **感知 (Perception)**: 读取视频帧与眼动数据，理解当前上下文 (Context)。
-2.  **规划 (Planning)**: 模仿 UX 设计师，决定"何时显示"、"显示什么"。
-3.  **生成 (Generation)**: 调用 **GPT-4o API**，基于我们定义的 Prompt Template 生成 UI 描述。
-4.  **结构化 (Structuring)**: 将 UI 描述转换为符合 **A2UI Protocol** 的 JSON 数据。
+# 启用视觉上下文
+python3 -m agent.src.pipeline --strategy v3_with_visual --enable-visual --limit 5
 
-### 3.2 协议 (Protocol)
-采用 **Standard A2UI JSON** + **Smart Glasses Extensions**。
-*   **基础**: Google A2UI (声明式 UI，安全且 LLM 友好)。
-*   **扩展**: 增加了 AR 锚点、注视触发、免打扰优先级等字段 (见 `A2UI-SmartGlasses-Extension.md`)。
-
----
-
-## 📂 4. 工程结构 (Project Structure)
-
-本仓库 (`/home/v-tangxin/GUI`) 包含以下核心模块：
-
-```text
-/home/v-tangxin/GUI/
-├── survey/                # [Research] 调研笔记、Gap 分析、文献综述
-├── data/                  # [Data] 原始数据集 (Symlinks to raw data)
-├── src/                   # [Engineering] 核心代码 (规划中)
-│   ├── schema/            # Zod Schemas (A2UI + Extensions)
-│   ├── generator/         # GPT-4o API 调用与 Prompt 管理
-│   └── renderer/          # 简单的 Web 渲染器 (用于验证生成的 JSON)
-├── scripts/               # [Tools] 批量数据处理脚本
-├── A2UI-SmartGlasses-Extension.md  # [Design] 协议扩展定义
-├── Research Question.md   # [Design] 研究大纲
-├── project-setup-guide.md # [Docs] 工程环境搭建指南
-└── test1.ipynb            # [Exp] API 连通性测试与原型实验
+# 启动预览服务器
+python3 -m agent.preview.server --port 8000
 ```
 
 ---
 
+## 📚 研究背景
 
+现有的 Generative UI 主要针对 Web 界面，直接应用到 Smart Glasses 场景存在显著 Gap：
+
+- **核心 Gap**: WebUI (鼠标/触控/大屏) vs Smart Glasses (注视/语音/透视/小屏)
+- **研究方向**: 探索适合智能眼镜的 "Minimal", "Anchored", "Context-aware" 的 UI 生成范式
+
+### 关键文档
+- [Gap 分析与场景定义](survey/2026-01-18%20example.md)
+- [A2UI 扩展协议](A2UI-SmartGlasses-Extension.md)
+- [数据集完整文档](docs/Ego-Dataset_Complete_Documentation.md)
+
+---
+
+## 📂 项目结构
+
+```
+/home/v-tangxin/GUI/
+├── agent/                      # 核心 Pipeline
+│   ├── src/
+│   │   ├── pipeline.py         # 主入口
+│   │   ├── example_loader.py   # 数据加载器 (100 examples)
+│   │   ├── llm/                # 多 LLM 提供商支持
+│   │   │   ├── azure_openai.py # Azure GPT-4o
+│   │   │   ├── gemini.py       # Google Gemini
+│   │   │   └── claude.py       # Anthropic Claude
+│   │   ├── prompts/            # Prompt 策略
+│   │   │   ├── v1_baseline.py  # 两步法基准
+│   │   │   ├── v2_google_gui.py# Google GUI 端到端
+│   │   │   ├── v2_smart_glasses.py # Smart Glasses 优化
+│   │   │   └── v3_with_visual.py   # 视觉上下文增强
+│   │   ├── video/
+│   │   │   ├── extractor.py    # 视频帧提取
+│   │   │   └── overlay/        # UI 叠加到视频
+│   │   └── sampling/           # 数据采样工具
+│   │
+│   ├── preview/                # A2UI 预览渲染器
+│   │   ├── server.py           # HTTP 服务器
+│   │   ├── static/src/0.8/ui/  # AR Glasses UI 组件
+│   │   └── web_core/           # A2UI 核心样式
+│   │
+│   ├── example/                # 100 个标注样本 (raw_data)
+│   └── output/                 # 生成结果
+│
+├── data/                       # 原始数据集 (Symlink)
+├── docs/                       # 技术文档
+├── survey/                     # 调研笔记
+└── smartfocus-glasses-ui/      # React 原型 UI
+```
+
+---
+
+## 🎯 核心功能
+
+### 1. 多 LLM 提供商支持
+
+| Provider | Model Examples | 特点 |
+|----------|---------------|------|
+| Azure OpenAI | `azure:gpt-4o` | 企业级稳定性 |
+| Google Gemini | `gemini:gemini-2.5-pro`, `gemini:gemini-2.5-flash` | 长上下文、视觉能力强 |
+| Anthropic Claude | `claude:claude-sonnet-4-5`, `claude:claude-opus-4-5-thinking` | 推理能力强 |
+
+```bash
+# 切换模型
+python3 -m agent.src.pipeline --model gemini:gemini-2.5-flash --limit 5
+```
+
+### 2. Prompt 策略
+
+| 策略 | 说明 | 视觉支持 |
+|------|------|----------|
+| `v1_baseline` | 两步法 (选组件→填属性) | ❌ |
+| `v2_google_gui` | Google GUI 端到端生成 | ✅ |
+| `v2_smart_glasses` | Smart Glasses 优化版 | ✅ |
+| `v3_with_visual` | 视觉上下文增强 | ✅ |
+
+### 3. 视频 UI Overlay
+
+将生成的 UI 叠加到原视频上，基于眼动坐标定位 UI 位置：
+
+```bash
+python3 -m agent.src.pipeline --overlay --overlay-duration 2.0 --limit 5
+```
+
+### 4. AR Glasses UI 组件
+
+优化的组件库，专为 AR 眼镜设计：
+- `Card` (glass/solid/outline/alert variants)
+- `Button` (primary/secondary/ghost)
+- `Badge` (info/success/warning/error)
+- `ProgressBar` (default/slim)
+- `Text`, `Icon`, `Row`, `Column`, `List`
+
+---
+
+## 📊 Pipeline 架构
+
+```
+Input (example/ + video)
+         │
+         ├── ExampleLoader (100 samples)
+         │
+         ├── Frame Extraction (可选)
+         │
+    ┌────┴────┐
+    │ Strategy│ v1/v2/v3
+    └────┬────┘
+         │
+    ┌────┴────┐
+    │ LLM API │ Azure/Gemini/Claude
+    └────┬────┘
+         │
+         ├── A2UI JSON Output
+         │
+         ├── Preview Server (port 8000)
+         │
+         └── Video Overlay (可选)
+```
+
+---
+
+## 🖥️ 预览服务器
+
+```bash
+# 启动服务器 (支持自动重载)
+python3 -m agent.preview.server --port 8000 --reload
+
+# 浏览器访问
+http://localhost:8000
+```
+
+支持的功能：
+- 实时渲染 A2UI JSON
+- AR Glasses 风格预览
+- 组件属性编辑
+- 截图导出
+
+---
+
+## 📥 数据集
+
+### 样本结构 (example/)
+
+```
+agent/example/
+├── Task2.1/
+│   └── P1_YuePan/
+│       └── sample_001/
+│           ├── context.json      # 上下文信息
+│           ├── frames/           # 提取的视频帧
+│           └── metadata.json     # 元数据
+```
+
+### 数据加载
+
+```python
+from agent.src.example_loader import ExampleLoader
+
+loader = ExampleLoader("/home/v-tangxin/GUI/agent", "P1_YuePan")
+for rec, scene in loader.iter_mvp_data(limit=10):
+    print(rec.content, scene.name)
+```
+
+---
+
+## ⚙️ 环境配置
+
+```bash
+# GPU 信息
+# NVIDIA A100 80GB PCIe
+# CUDA 驱动版本: 13.0 (Driver 580.95.05)
+# PyTorch CUDA版本: 12.8
+
+# 环境变量 (在 .env 中配置)
+AZURE_OPENAI_ENDPOINT=xxx
+AZURE_OPENAI_API_KEY=xxx
+GOOGLE_API_KEY=xxx
+ANTHROPIC_API_KEY=xxx
+```
+
+---
+
+## 📤 输出格式
+
+### A2UI 组件 JSON
+
+```json
+{
+  "type": "Card",
+  "id": "card_01cd8199",
+  "props": {
+    "variant": "glass"
+  },
+  "children": [
+    {
+      "type": "Text",
+      "props": {"variant": "h1", "content": "导航到图书馆"}
+    },
+    {
+      "type": "Badge",
+      "props": {"variant": "info", "text": "500m"}
+    }
+  ],
+  "metadata": {
+    "strategy": "v2_google_gui",
+    "model": "gemini:gemini-2.5-pro"
+  }
+}
+```
+
+---
+
+## ✅ 已完成事项
+
+- [x] Preview 渲染端的 AR Glasses UI 优化
+- [x] 初始数据集的 100 个 examples 提取
+- [x] User profile 和 context 集成到生成 Prompt
+- [x] Video UI Overlay 系统实现
+- [x] 多 LLM 提供商支持 (Gemini, Claude, Azure)
+- [x] A2UI Lit 渲染器集成
+- [x] 组件 Schema 定义
+
+---
+
+*Updated: 2026-02-02*
