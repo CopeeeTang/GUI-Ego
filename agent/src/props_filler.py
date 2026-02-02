@@ -143,6 +143,22 @@ COMPONENT_SCHEMAS = {
             ],
         },
     },
+    "info_card": {
+        "required": ["title", "content"],
+        "properties": {
+            "title": "string - 卡片标题",
+            "subtitle": "string - 副标题（可选）",
+            "content": "string - 详细描述内容",
+            "image_url": "string - 相关的图片链接（可选）",
+            "action": "object - 操作按钮 {label, type: 'open'|'dismiss'}",
+        },
+        "example": {
+            "title": "红酒百科",
+            "subtitle": "赤霞珠 (Cabernet Sauvignon)",
+            "content": "赤霞珠是世界上最著名的红葡萄品种之一。它以色泽深沉、单宁厚重、香气浓郁（如黑加仑、青椒、雪松）而闻名。通常需要较长时间的陈年以达到最佳风味。",
+            "action": {"label": "查看更多", "type": "open"},
+        },
+    },
 }
 
 PROPS_FILLING_PROMPT = """你是一个智能眼镜 UI 内容生成专家。根据 AI 推荐内容，填充 UI 组件的 props。

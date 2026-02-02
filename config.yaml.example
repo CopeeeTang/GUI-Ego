@@ -1,0 +1,37 @@
+# LLM Configuration Example
+# Copy this file to config.yaml and customize as needed
+
+# Default provider settings
+defaults:
+  provider: azure
+  model: gpt-4o
+  max_retries: 3
+  retry_delay: 1.0
+
+# Provider-specific settings
+providers:
+  azure:
+    # Azure OpenAI settings are loaded from environment variables:
+    # - AZURE_OPENAI_ENDPOINT
+    # - AZURE_OPENAI_API_KEY
+    api_version: "2024-09-01-preview"
+
+  gemini:
+    # Gemini settings are loaded from environment variables:
+    # - GEMINI_API_KEY
+    # - GEMINI_PROXY (optional, defaults to http://127.0.0.1:7890)
+    models:
+      - gemini-2.5-flash
+      - gemini-2.5-pro
+      - gemini-2.0-flash
+
+  claude:
+    # Claude settings are loaded from environment variables:
+    # - ANTHROPIC_API_KEY
+    # - CLAUDE_PROXY (optional, defaults to http://127.0.0.1:7890)
+    thinking_budget: 10000  # Token budget for thinking models
+    models:
+      - claude-sonnet-4-5
+      - claude-sonnet-4-5-thinking
+      - claude-opus-4-5
+      - claude-opus-4-5-thinking

@@ -15,7 +15,7 @@
  */
 
 import { html, css, nothing } from "lit";
-import { customElement } from "lit/decorators.js";
+import { customElement, property } from "lit/decorators.js";
 import { Root } from "./root.js";
 import { classMap } from "lit/directives/class-map.js";
 import { styleMap } from "lit/directives/style-map.js";
@@ -23,6 +23,8 @@ import { structuralStyles } from "./styles.js";
 
 @customElement("a2ui-card")
 export class Card extends Root {
+  @property({ type: String })
+  accessor variant: "glass" | "solid" | "outline" | "alert" = "glass";
   static styles = [
     structuralStyles,
     css`
@@ -52,8 +54,9 @@ export class Card extends Root {
   ];
 
   render() {
+    const variantClass = `a2ui-card-${this.variant}`;
     return html` <section
-      class=${classMap(this.theme.components.Card)}
+      class="${classMap(this.theme.components.Card)} ${variantClass}"
       style=${this.theme.additionalStyles?.Card
         ? styleMap(this.theme.additionalStyles?.Card)
         : nothing}

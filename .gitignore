@@ -50,6 +50,7 @@ wandb/
 mlruns/
 lightning_logs/
 
+#/smartfocus-glasses-ui
 # Large data files
 data/
 dataset/
@@ -86,3 +87,12 @@ htmlcov/
 .coverage
 .coverage.*
 coverage.xml
+
+# Node.js
+node_modules/
+.wireit/
+
+# Project-specific
+temp/
+agent/output/
+agent/example/

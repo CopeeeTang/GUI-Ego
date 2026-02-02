@@ -12,80 +12,67 @@ from .base import PromptStrategy, Recommendation, SceneConfig
 logger = logging.getLogger(__name__)
 
 
-# Google End-to-End System Prompt Adapted for A2UI JSON output
-# Retains "Core Philosophy", "Examples", and "Thought Process" from original
-GOOGLE_A2UI_SYSTEM_PROMPT = """You are an expert, meticulous, and creative A2UI (Agent-to-UI) developer. Your primary task is to generate ONLY the raw A2UI JSON message stream for a **complete, valid, functional, visually stunning, and INTERACTIVE application or component**, based on the user's request and the conversation history.
-
-**Your main goal is always to build an interactive application or component.**
+# Google End-to-End System Prompt for A2UI component generation
+# Simplified to output direct A2UI component format (compatible with converter.py)
+GOOGLE_A2UI_SYSTEM_PROMPT = """You are an expert A2UI (Agent-to-UI) developer for smart glasses AR interfaces.
+Your task is to generate a single, complete A2UI component as a JSON object.
 
 **Core Philosophy:**
-*   **Build Interactive Apps First:** Even for simple queries that *could* be answered with static text, **your primary goal is to create an interactive application** (e.g., a dashboard, a wizard, a gallery). **Do not just return static text results.**
-*   **No walls of text:** Avoid long segments with a lot of text. Use `Cards`, `Lists`, `Columns`, `Images`, and `Visual Hierarchies`.
-*   **Fact Verification via Search (MANDATORY for Entities):** When the user prompt concerns specific entities or requires factual data, using the `search_tool` is **ABSOLUTELY MANDATORY**. Do **NOT** rely on internal knowledge alone. **All factual claims presented in the UI Data Model MUST be directly supported by search results.**
-*   **Freshness:** Use search to verify the latest information.
-*   **No Placeholders:** No placeholder controls or dummy text data. If data is missing, SEARCH for it.
-*   **Implement Fully & Thoughtfully:** Design the A2UI Component Tree and Data Model carefully.
-*   **Handle Data Needs Creatively:** Start by fetching all the data you might need from search. Then design a data model that drives the UI.
-*   **Quality & Depth:** Prioritize high-quality design (using standard A2UI components like `Card`, `Row`, `Column`, `Styles`) and robust data modeling.
+- **Build Interactive UIs:** Create visually engaging components, not just static text
+- **Minimal & Clear:** Smart glasses have limited display - use visual hierarchy wisely
+- **No Placeholders:** Always include real, meaningful content based on the context
+- **AR-Optimized:** Design for floating overlays, quick glances, and ambient awareness
+- **Semantic Only:** Output semantic structure, NOT styling. The renderer handles all visuals.
 
-**Application Examples & Expectations:**
-*Your goal is to build rich, interactive applications using A2UI components.*
+**Available A2UI Components with Variants:**
 
-*   **Example 1: User asks "what's the time?"**
-    *   DON'T just output text.
-    *   DO generate a **Clock/Dashboard UI**:
-        *   Create a Surface with a large, styled `Text` component bound to `/time/current`.
-        *   Send an `updateDataModel` message to populate `/time/current` with the verified local time.
-        *   Add `Images` or `Icons` representing the time of day.
+| Component   | Variants                              | Usage                           |
+|-------------|---------------------------------------|--------------------------------|
+| Card        | glass, solid, outline, alert          | Container for UI sections       |
+| Text        | hero, h1, h2, body, caption, label    | Text display                    |
+| Button      | primary, secondary, ghost, icon_only  | Interactive actions             |
+| Badge       | info, success, warning, error         | Status indicators               |
+| Icon        | small, medium, large                  | Material icons                  |
+| ProgressBar | default, slim                         | Progress indicators             |
+| Row         | (layout only)                         | Horizontal layout               |
+| Column      | (layout only)                         | Vertical layout                 |
+| List        | (layout only)                         | List container                  |
+| Divider     | (layout only)                         | Visual separator                |
+| Image       | (layout only)                         | Image display                   |
 
-*   **Example 2: User asks "jogging route in Singapore"**
-    *   DON'T just list sights.
-    *   DO generate an **Interactive Trip Planner**:
-        *   Use search **mandatorily** for coordinates and sights.
-        *   Structure the UI as a `List` of `Card`s, each representing a "Route Segment" or "Sight".
-        *   Use a `map_card` component (if available) or a series of `Images` retrieved via search.
-        *   Include `Button`s for actions like "View Details".
+**Output Format:**
+Return a single JSON object with this structure:
+{
+  "type": "<component_type>",
+  "id": "<unique_identifier>",
+  "props": {
+    "variant": "<variant_token>",  // Use variant tokens, NOT raw styles
+    ...semantic props only
+  },
+  "children": [ ... ],
+  "metadata": {
+    "selection": {
+      "strategy": "v2_google_gui",
+      "end_to_end": true
+    }
+  }
+}
 
-*   **Example 3: User asks "barack obama family"**
-    *   DON'T just list names.
-    *   DO generate a **Biographical Explorer App**:
-        *   Use `Tabs` for "Immediate Family", "Early Life", "Career".
-        *   Inside tabs, use `Lists` of `Row`s with `Image` (avatar) and `Text` (name/role).
-        *   Ensure all data in the Data Model is verified by search.
+**FORBIDDEN - Never include these in output:**
+- "style" objects at any level
+- "color", "fontSize", "fontWeight", "background" in props
+- Any raw CSS values or inline styles
+- Hex colors, pixel values, or CSS properties
 
-**Mandatory Internal Thought Process (Before Generating JSON):**
-1.  **Interpret Query:** Analyze prompt & history. Is search mandatory? What **interactive A2UI application** fits?
-2.  **Plan Application Concept:** Define the Component Hierarchy (Card > Column > List...).
-3.  **Plan Content & Data Model:** Define the JSON Data Model structure (e.g., `/user/profile/name`). Plan the specific data points needed.
-4.  **Identify Data/Image Needs & Plan Searches:** Plan **mandatory searches**. Determine if images should be 'generated' or 'search_result'.
-5.  **Perform Searches (Internal):** Use tools to gather facts. Issue follow-up searches if needed.
-6.  **Brainstorm Features:** Select appropriate A2UI components (`ChoicePicker`, `Slider`, `Video`, `Tabs`, `Modal`).
-7.  **Filter & Integrate:** Discard weak ideas. Integrate verified data.
+**Design Guidelines for Smart Glasses:**
+1. Use Card with variant="glass" as the root container
+2. Prefer Row > [Icon, Column > [Text(variant="h2"), Text(variant="caption")]] for info labels
+3. Keep text concise - no long paragraphs
+4. Use icons to convey meaning quickly
+5. Use Badge with appropriate variant for status indicators
+6. Include actionable buttons when interaction is expected
 
-**Output Requirements & Format:**
-*   **CRITICAL - A2UI JSON ONLY:** Your final output **MUST** contain ONLY the valid A2UI JSON message stream.
-*   **Structure:**
-    1.  First, a `createSurface` message to define the surface.
-    2.  Second, an `updateComponents` message to define the UI structure (the Layout).
-        *   Use components like `Card`, `Column`, `Row`, `Text`, `Image`, `Button`, `TextField`, `Tabs`, `List`.
-        *   Use **Data Binding** (e.g., `text: "${/path/to/data}"`) wherever possible to separate content from structure.
-    3.  Third, an `updateDataModel` message to populate the data you found/generated.
-*   **Format Constraints:**
-    *   The output must be a single JSON List `[...]` containing the messages.
-    *   Do **NOT** wrap in markdown code blocks like ```json ... ```. Just the raw JSON string or wrapped in strict delimiter if specified.
-    *   **Delimiter:** separate your internal thought process/plan from the final JSON with `---a2ui_JSON---`.
-
-**Example Output Layout:**
-[THOUGHT PROCESS TEXT]
-I will search for... I found...
-I will design a Dashboard with...
----a2ui_JSON---
-[
-  { "type": "createSurface", ... },
-  { "type": "updateComponents", ... },
-  { "type": "updateDataModel", ... }
-]
-"""
+**CRITICAL:** Output ONLY the raw JSON object. No markdown, no code blocks, no explanations."""
 
 
 class GoogleGUIPromptStrategy(PromptStrategy):
@@ -150,6 +137,52 @@ class GoogleGUIPromptStrategy(PromptStrategy):
         """Set the prompt template."""
         self._prompt_template = template
 
+    def _strip_style_properties(self, component: dict) -> dict:
+        """Remove forbidden style properties from component tree.
+
+        This sanitizer ensures the LLM output conforms to the semantic-only
+        constraint by stripping any CSS/styling properties that may have leaked.
+
+        Args:
+            component: A2UI component dictionary (potentially with children)
+
+        Returns:
+            Sanitized component with all style properties removed
+        """
+        # Remove top-level style object
+        if "style" in component:
+            del component["style"]
+
+        # Remove forbidden properties from props
+        if "props" in component:
+            forbidden_props = [
+                "color", "fontSize", "fontWeight", "background",
+                "backgroundColor", "borderColor", "textColor",
+                "padding", "margin", "width", "height",
+            ]
+            for forbidden in forbidden_props:
+                component["props"].pop(forbidden, None)
+
+        # Recursively sanitize children
+        if "children" in component and isinstance(component["children"], list):
+            component["children"] = [
+                self._strip_style_properties(c) if isinstance(c, dict) else c
+                for c in component["children"]
+            ]
+
+        # Also handle "content" field if it contains nested components
+        if "content" in component:
+            content = component["content"]
+            if isinstance(content, dict):
+                component["content"] = self._strip_style_properties(content)
+            elif isinstance(content, list):
+                component["content"] = [
+                    self._strip_style_properties(c) if isinstance(c, dict) else c
+                    for c in content
+                ]
+
+        return component
+
     def supports_visual_context(self) -> bool:
         """Google GUI strategy can support visual context if template includes it."""
         return True  # Depends on the template
@@ -197,6 +230,9 @@ class GoogleGUIPromptStrategy(PromptStrategy):
             temperature=0.5,
         )
 
+        # Sanitize output to ensure semantic-only structure
+        result = self._strip_style_properties(result)
+
         # Add metadata
         result["metadata"] = result.get("metadata", {})
         result["metadata"]["selection"] = {
@@ -224,6 +260,28 @@ class GoogleGUIPromptStrategy(PromptStrategy):
             elif visual_context.get("mode") == "direct":
                 visual_context_str = "[Visual context: Images passed directly]"
 
+        # Build user profile context string
+        user_profile_str = ""
+        metadata = getattr(recommendation, 'metadata', {}) or {}
+        user_profile = metadata.get("user_profile", {})
+        if user_profile:
+            profile_parts = []
+            if user_profile.get("preferred_name"):
+                profile_parts.append(f"Name: {user_profile['preferred_name']}")
+            if user_profile.get("occupation"):
+                profile_parts.append(f"Occupation: {user_profile['occupation']}")
+            if user_profile.get("personality"):
+                profile_parts.append(f"Personality: {user_profile['personality']}")
+            if user_profile.get("interests"):
+                interests = ", ".join(user_profile["interests"][:5])  # Limit to 5
+                profile_parts.append(f"Interests: {interests}")
+            if user_profile.get("goals"):
+                profile_parts.append(f"Current Goals: {user_profile['goals']}")
+            user_profile_str = "\n".join(profile_parts)
+
+        # Build scene context string
+        scene_context_str = metadata.get("scene_context", "") or ""
+
         # Format template
         try:
             formatted = self._prompt_template.format(
@@ -234,6 +292,8 @@ class GoogleGUIPromptStrategy(PromptStrategy):
                 recommendation_type=recommendation.type,
                 recommendation_content=recommendation.content,
                 visual_context=visual_context_str,
+                user_profile=user_profile_str,
+                scene_context=scene_context_str,
             )
         except KeyError as e:
             logger.warning(f"Template variable not found: {e}. Using partial formatting.")
@@ -247,6 +307,8 @@ class GoogleGUIPromptStrategy(PromptStrategy):
                 "{recommendation_type}": recommendation.type,
                 "{recommendation_content}": recommendation.content,
                 "{visual_context}": visual_context_str,
+                "{user_profile}": user_profile_str,
+                "{scene_context}": scene_context_str,
             }
             for key, value in replacements.items():
                 formatted = formatted.replace(key, str(value))
@@ -259,6 +321,12 @@ DEFAULT_GOOGLE_GUI_TEMPLATE = """You are an expert smart glasses UI generation s
 
 ## Scene: {scene_name}
 {scene_description}
+
+## User Profile
+{user_profile}
+
+## Current Activity Context
+{scene_context}
 
 ## Available Components
 {component_list}
@@ -273,12 +341,14 @@ DEFAULT_GOOGLE_GUI_TEMPLATE = """You are an expert smart glasses UI generation s
 
 ## Task
 Generate a complete, interactive A2UI component that best represents this recommendation for smart glasses display.
+Consider the user's profile, interests, and current activity context when designing the UI.
 
 **Guidelines:**
 1. Build an interactive UI, not just static text
 2. Use appropriate components from the available list
 3. Ensure the design is suitable for AR/smart glasses viewing
 4. Include clear visual hierarchy and minimal text
+5. Personalize content based on user profile and context
 
 ## Output
 Return a JSON object with:

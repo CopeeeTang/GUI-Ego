@@ -10,109 +10,151 @@ from .base import PromptStrategy, Recommendation, SceneConfig
 logger = logging.getLogger(__name__)
 
 
-# Component definitions with visual context considerations
+# A2UI 原子组件定义 - 与 Preview 渲染器兼容
 VISUAL_COMPONENT_DEFINITIONS = {
     "navigation": {
-        "map_card": {
-            "description": "地图卡片，用于显示位置、导航路线、附近的兴趣点",
-            "visual_hints": "当视野中有开阔道路或户外环境时特别适用",
+        "Card": {
+            "description": "容器卡片，用于组合显示导航信息、地点详情、路线选项",
+            "visual_hints": "当需要展示结构化导航信息时使用，可包含多个子元素",
             "anchor_strategy": "通常显示在视野下方或角落",
         },
-        "ar_label": {
-            "description": "AR 标签，悬浮在物理对象上方显示信息",
-            "visual_hints": "当视野中有明确的建筑物、地标或物体时使用",
-            "anchor_strategy": "锚定到识别出的物体上方",
+        "Text": {
+            "description": "文本元素，显示标题、描述、距离、时间等",
+            "visual_hints": "用于显示地点名称、距离、时间等文字信息",
+            "anchor_strategy": "作为Card或其他容器的子元素",
         },
-        "direction_arrow": {
-            "description": "方向指引箭头，显示前进方向和距离",
-            "visual_hints": "当用户正在移动或需要导航指引时使用",
-            "anchor_strategy": "显示在视野中央或前进方向",
+        "Button": {
+            "description": "交互按钮，触发导航、选择路线等操作",
+            "visual_hints": "当用户需要进行操作选择时使用",
+            "anchor_strategy": "通常放置在卡片底部或右侧",
         },
-        "comparison_card": {
-            "description": "对比卡片，并排比较两个或多个选项",
-            "visual_hints": "当需要在多个选择间决策时使用",
-            "anchor_strategy": "通常显示在视野中央",
+        "Icon": {
+            "description": "图标元素，表示方向、地点类型、交通方式等",
+            "visual_hints": "用于增强视觉识别，配合文字使用",
+            "anchor_strategy": "放置在文字左侧或独立显示",
+        },
+        "Badge": {
+            "description": "标签徽章，显示距离、时间等简短信息",
+            "visual_hints": "用于突出显示关键数值或状态",
+            "anchor_strategy": "放置在相关内容旁边",
+        },
+        "Row": {
+            "description": "水平布局容器，横向排列子元素",
+            "visual_hints": "用于并排显示多个元素",
+            "anchor_strategy": "作为布局容器使用",
+        },
+        "Column": {
+            "description": "垂直布局容器，纵向排列子元素",
+            "visual_hints": "用于垂直排列多行内容",
+            "anchor_strategy": "作为布局容器使用",
         },
     },
     "shopping": {
-        "comparison_card": {
-            "description": "对比卡片，并排比较商品属性",
-            "visual_hints": "当视野中有多个可比较的商品时使用",
-            "anchor_strategy": "显示在商品上方或视野中央",
+        "Card": {
+            "description": "容器卡片，用于显示商品信息、价格比较、营养数据",
+            "visual_hints": "当视野中有商品或价格标签时使用",
+            "anchor_strategy": "锚定到产品附近或视野中央",
         },
-        "nutrition_card": {
-            "description": "营养信息卡片，显示食品的营养数据",
-            "visual_hints": "当视野中有食品包装或产品时使用",
-            "anchor_strategy": "锚定到产品包装附近",
+        "Text": {
+            "description": "文本元素，显示商品名称、价格、营养成分等",
+            "visual_hints": "用于显示商品相关的文字信息",
+            "anchor_strategy": "作为Card的子元素",
         },
-        "price_calculator": {
-            "description": "价格计算器，计算单价、总价、性价比",
-            "visual_hints": "当视野中有价格标签或多个商品时使用",
-            "anchor_strategy": "显示在价格标签附近",
+        "Button": {
+            "description": "交互按钮，添加购物车、查看详情等",
+            "visual_hints": "当用户需要进行购物操作时使用",
+            "anchor_strategy": "放置在卡片底部",
         },
-        "ar_label": {
-            "description": "AR 标签，叠加在商品上显示信息",
-            "visual_hints": "当需要标注特定商品时使用",
-            "anchor_strategy": "锚定到商品位置",
+        "Badge": {
+            "description": "标签徽章，显示折扣、健康评级等",
+            "visual_hints": "用于突出显示促销信息或评级",
+            "anchor_strategy": "放置在商品信息旁边",
+        },
+        "List": {
+            "description": "列表容器，展示多个商品或属性条目",
+            "visual_hints": "当需要展示多个可比较项目时使用",
+            "anchor_strategy": "作为Card的子元素",
+        },
+        "Row": {
+            "description": "水平布局容器，横向排列子元素",
+            "visual_hints": "用于并排显示价格和单位等",
+            "anchor_strategy": "作为布局容器使用",
+        },
+        "Column": {
+            "description": "垂直布局容器，纵向排列子元素",
+            "visual_hints": "用于垂直排列营养成分等",
+            "anchor_strategy": "作为布局容器使用",
+        },
+        "Icon": {
+            "description": "图标元素，表示商品类型、健康指示等",
+            "visual_hints": "用于增强视觉识别",
+            "anchor_strategy": "放置在文字左侧",
         },
     },
 }
 
-# Component schemas for props generation
+# A2UI 原子组件 Schema 定义
 COMPONENT_SCHEMAS = {
-    "map_card": {
-        "required": ["title"],
+    "Card": {
+        "required": ["children"],
         "properties": {
-            "title": "string - 卡片标题",
-            "subtitle": "string - 副标题（可选）",
-            "markers": "array - 地图标记点列表",
-            "action": "object - 操作按钮 {label, type}",
+            "variant": "string - 卡片变体 (default|glass|outlined)",
+            "children": "array - 子组件列表",
+            "padding": "string - 内边距 (sm|md|lg)",
         },
     },
-    "ar_label": {
+    "Text": {
+        "required": ["content"],
+        "properties": {
+            "content": "string - 文本内容",
+            "variant": "string - 文本变体 (title|subtitle|body|caption)",
+            "color": "string - 文本颜色",
+        },
+    },
+    "Button": {
+        "required": ["label"],
+        "properties": {
+            "label": "string - 按钮文字",
+            "variant": "string - 按钮变体 (primary|secondary|ghost)",
+            "icon": "string - 图标名称（可选）",
+            "action": "object - 操作定义 {type, payload}",
+        },
+    },
+    "Icon": {
+        "required": ["name"],
+        "properties": {
+            "name": "string - 图标名称 (arrow-right|location|cart|star|...)",
+            "size": "string - 图标大小 (sm|md|lg)",
+            "color": "string - 图标颜色",
+        },
+    },
+    "Badge": {
         "required": ["text"],
         "properties": {
-            "text": "string - 主要文字",
-            "subtext": "string - 次要文字（可选）",
-            "icon": "string - 图标名称（可选）",
-            "anchor": "object - 锚定信息 {type, target, position}",
+            "text": "string - 徽章文字",
+            "variant": "string - 徽章变体 (default|success|warning|error)",
         },
     },
-    "comparison_card": {
-        "required": ["title", "items"],
+    "Row": {
+        "required": ["children"],
         "properties": {
-            "title": "string - 对比标题",
-            "items": "array - 对比项列表",
-            "recommendation": "string - 推荐结论",
+            "children": "array - 子组件列表",
+            "gap": "string - 间距 (sm|md|lg)",
+            "align": "string - 对齐方式 (start|center|end|between)",
         },
     },
-    "direction_arrow": {
-        "required": ["direction"],
+    "Column": {
+        "required": ["children"],
         "properties": {
-            "direction": "string - 方向: left/right/forward/back",
-            "distance": "string - 距离",
-            "destination": "string - 目的地名称",
-            "eta": "string - 预计到达时间",
+            "children": "array - 子组件列表",
+            "gap": "string - 间距 (sm|md|lg)",
         },
     },
-    "nutrition_card": {
-        "required": ["product_name"],
-        "properties": {
-            "product_name": "string - 产品名称",
-            "calories": "number - 热量(kcal)",
-            "protein": "string - 蛋白质",
-            "carbs": "string - 碳水化合物",
-            "fat": "string - 脂肪",
-            "health_rating": "integer - 健康评级 1-5",
-        },
-    },
-    "price_calculator": {
+    "List": {
         "required": ["items"],
         "properties": {
-            "title": "string - 标题",
-            "items": "array - 商品列表",
-            "total": "number - 总价",
-            "recommendation": "string - 推荐建议",
+            "items": "array - 列表项",
+            "variant": "string - 列表变体 (default|compact)",
         },
     },
 }
@@ -133,9 +175,15 @@ class VisualPromptStrategy(PromptStrategy):
     """
 
     # Main prompt template with visual context
-    VISUAL_PROMPT_TEMPLATE = """你是一个智能眼镜 UI 生成专家，能够结合视觉场景信息生成最合适的 UI 组件。
+    VISUAL_PROMPT_TEMPLATE = """你是一个智能眼镜 UI 生成专家，能够结合视觉场景信息和用户个人信息生成最合适的 UI 组件。
 
 ## 当前场景: {scene_name}
+
+## 用户画像
+{user_profile}
+
+## 当前活动上下文
+{scene_context}
 
 ## 视觉上下文
 {visual_context}
@@ -151,13 +199,14 @@ class VisualPromptStrategy(PromptStrategy):
 {component_schema}
 
 ## 任务
-结合视觉上下文和推荐内容，生成最合适的 UI 组件。
+结合用户画像、活动上下文、视觉上下文和推荐内容，生成最合适的 UI 组件。
 
 考虑以下因素：
-1. **物体定位**: 根据视觉上下文中识别的物体位置，确定 AR 元素的锚点
-2. **环境适配**: 根据环境特征（光线、拥挤程度）调整 UI 显示策略
-3. **用户活动**: 根据用户当前活动状态选择合适的交互方式
-4. **视觉一致性**: 确保 UI 元素与物理场景自然融合
+1. **用户个性化**: 根据用户的兴趣、性格和目标定制 UI 内容和交互方式
+2. **物体定位**: 根据视觉上下文中识别的物体位置，确定 AR 元素的锚点
+3. **环境适配**: 根据环境特征（光线、拥挤程度）调整 UI 显示策略
+4. **用户活动**: 根据用户当前活动状态选择合适的交互方式
+5. **视觉一致性**: 确保 UI 元素与物理场景自然融合
 
 ## 输出格式
 返回完整的 JSON 组件定义:
@@ -319,6 +368,29 @@ class VisualPromptStrategy(PromptStrategy):
         else:
             visual_context_str = visual_context.get("description", "无视觉上下文")
 
+        # Build user profile context string
+        user_profile_str = "无用户画像信息"
+        metadata = getattr(recommendation, 'metadata', {}) or {}
+        user_profile = metadata.get("user_profile", {})
+        if user_profile:
+            profile_parts = []
+            if user_profile.get("preferred_name"):
+                profile_parts.append(f"姓名: {user_profile['preferred_name']}")
+            if user_profile.get("occupation"):
+                profile_parts.append(f"职业: {user_profile['occupation']}")
+            if user_profile.get("personality"):
+                profile_parts.append(f"性格: {user_profile['personality']}")
+            if user_profile.get("interests"):
+                interests = ", ".join(user_profile["interests"][:5])
+                profile_parts.append(f"兴趣: {interests}")
+            if user_profile.get("goals"):
+                profile_parts.append(f"当前目标: {user_profile['goals']}")
+            if profile_parts:
+                user_profile_str = "\n".join(profile_parts)
+
+        # Build scene context string
+        scene_context_str = metadata.get("scene_context", "") or "无活动上下文信息"
+
         return self.VISUAL_PROMPT_TEMPLATE.format(
             scene_name=scene.name,
             visual_context=visual_context_str,
@@ -326,6 +398,8 @@ class VisualPromptStrategy(PromptStrategy):
             recommendation_content=recommendation.content,
             component_list="\n".join(component_lines),
             component_schema="\n\n".join(schema_lines),
+            user_profile=user_profile_str,
+            scene_context=scene_context_str,
         )
 
     def _infer_component_type(
@@ -333,28 +407,10 @@ class VisualPromptStrategy(PromptStrategy):
         recommendation: Recommendation,
         scene: SceneConfig,
     ) -> str:
-        """Infer component type from recommendation if not provided by LLM."""
-        # Simple heuristic based on recommendation type and content
-        content_lower = recommendation.content.lower()
+        """Infer component type from recommendation if not provided by LLM.
 
-        if scene.name == "navigation":
-            if any(kw in content_lower for kw in ["导航", "路线", "地图", "附近"]):
-                return "map_card"
-            elif any(kw in content_lower for kw in ["建筑", "地标", "识别"]):
-                return "ar_label"
-            elif any(kw in content_lower for kw in ["方向", "转", "前进"]):
-                return "direction_arrow"
-            else:
-                return "ar_label"  # Default for navigation
-        elif scene.name == "shopping":
-            if any(kw in content_lower for kw in ["比较", "对比", "选择"]):
-                return "comparison_card"
-            elif any(kw in content_lower for kw in ["营养", "热量", "成分"]):
-                return "nutrition_card"
-            elif any(kw in content_lower for kw in ["价格", "性价比", "计算"]):
-                return "price_calculator"
-            else:
-                return "ar_label"  # Default for shopping
-
-        # Fallback to first allowed component
-        return scene.allowed_components[0] if scene.allowed_components else "ar_label"
+        Returns A2UI atomic component types.
+        """
+        # For A2UI atomic components, Card is the primary container
+        # Most UI patterns start with a Card containing other elements
+        return "Card"

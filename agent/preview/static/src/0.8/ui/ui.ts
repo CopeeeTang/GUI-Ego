@@ -23,6 +23,7 @@ export type CustomElementConstructorOf<T extends HTMLElement> = {
 } & typeof HTMLElement;
 
 import { Audio } from "./audio.js";
+import { Badge } from "./badge.js";
 import { Button } from "./button.js";
 import { Card } from "./card.js";
 import { Checkbox } from "./checkbox.js";
@@ -34,6 +35,7 @@ import { Image } from "./image.js";
 import { List } from "./list.js";
 import { MultipleChoice } from "./multiple-choice.js";
 import { Modal } from "./modal.js";
+import { ProgressBar } from "./progress-bar.js";
 import { Root } from "./root.js";
 import { Row } from "./row.js";
 import { Slider } from "./slider.js";
@@ -50,6 +52,7 @@ export { registerCustomComponents } from "./custom-components/index.js";
 
 export {
   Audio,
+  Badge,
   Button,
   Card,
   Column,
@@ -61,6 +64,7 @@ export {
   List,
   MultipleChoice,
   Modal,
+  ProgressBar,
   Row,
   Slider,
   Root,
@@ -73,6 +77,7 @@ export {
 
 interface A2UITagNameMap {
   "a2ui-audioplayer": Audio;
+  "a2ui-badge": Badge;
   "a2ui-button": Button;
   "a2ui-card": Card;
   "a2ui-checkbox": Checkbox;
@@ -84,6 +89,7 @@ interface A2UITagNameMap {
   "a2ui-list": List;
   "a2ui-modal": Modal;
   "a2ui-multiplechoice": MultipleChoice;
+  "a2ui-progressbar": ProgressBar;
   "a2ui-root": Root;
   "a2ui-row": Row;
   "a2ui-slider": Slider;

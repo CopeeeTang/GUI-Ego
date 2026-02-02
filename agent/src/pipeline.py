@@ -12,19 +12,22 @@ from datetime import datetime
 from typing import Any, Optional
 from tqdm import tqdm
 
-from .data_loader import DataLoader, Recommendation as DLRecommendation, SceneConfig as DLSceneConfig
+from .example_loader import ExampleLoader
 from .llm_client import LLMClient
+from .llm import create_client, LLMClientBase
 from .component_selector import ComponentSelector
 from .props_filler import PropsFiller
 from .schema_validator import SchemaValidator
+from .schema import Recommendation, SceneConfig
 
 # New modules
 from .video.extractor import FrameExtractor
 from .video.visual_context import VisualContextGenerator, VisualContextMode, VisualContextCache
-from .prompts.base import PromptStrategy, Recommendation, SceneConfig
+from .prompts.base import PromptStrategy
 from .prompts.v1_baseline import BaselinePromptStrategy
 from .prompts.v2_google_gui import GoogleGUIPromptStrategy
 from .prompts.v3_with_visual import VisualPromptStrategy
+from .prompts.v2_smart_glasses import SmartGlassesPromptStrategy
 from .a2ui.converter import A2UIConverter
 from .a2ui.message_builder import A2UIMessageBuilder, A2UISession
 
@@ -35,6 +38,7 @@ STRATEGY_REGISTRY = {
     "v1_baseline": BaselinePromptStrategy,
     "v2_google_gui": GoogleGUIPromptStrategy,
     "v3_with_visual": VisualPromptStrategy,
+    "v2_smart_glasses": SmartGlassesPromptStrategy,
 }
 
 
@@ -51,20 +55,22 @@ class GenerativeUIPipeline:
         # New configuration options
         prompt_strategy: str = "v1_baseline",
         enable_visual: bool = False,
-        visual_mode: str = "description",
+        visual_mode: str = "direct",
         output_format: str = "legacy",
         video_path: str | None = None,
         num_frames: int = 3,
         google_gui_template: str | None = None,
+        # Multi-LLM support
+        model_spec: str | None = None,
     ):
         """Initialize the pipeline.
 
         Args:
-            data_path: Path to the dataset.
+            data_path: Path to the dataset (should contain example/ folder).
             output_path: Path for output files.
             participant: Participant ID.
-            azure_endpoint: Azure OpenAI endpoint.
-            azure_api_key: Azure OpenAI API key.
+            azure_endpoint: Azure OpenAI endpoint (deprecated, use model_spec).
+            azure_api_key: Azure OpenAI API key (deprecated, use model_spec).
             prompt_strategy: Strategy to use ("v1_baseline", "v2_google_gui", "v3_with_visual").
             enable_visual: Whether to enable video frame extraction.
             visual_mode: Visual context mode ("direct" or "description").
@@ -72,10 +78,15 @@ class GenerativeUIPipeline:
             video_path: Path to video file (auto-detected if None).
             num_frames: Number of frames to extract per recommendation.
             google_gui_template: Path to Google GUI prompt template.
+            model_spec: LLM model specification (e.g., "azure:gpt-4o", "gemini:gemini-2.5-pro", "claude:claude-sonnet-4-5").
         """
         self.data_path = Path(data_path)
         self.participant = participant
-        self.data_loader = DataLoader(data_path, participant)
+
+        # Use ExampleLoader for data loading
+        self.data_loader = ExampleLoader(data_path, participant)
+        logger.info(f"Using ExampleLoader with {self.data_loader.get_sample_count()} samples")
+
         self.output_path = Path(output_path)
         self.output_path.mkdir(parents=True, exist_ok=True)
 
@@ -85,12 +96,18 @@ class GenerativeUIPipeline:
         self.visual_mode = visual_mode
         self.output_format = output_format
         self.num_frames = num_frames
+        self.model_spec = model_spec or "azure:gpt-4o"
 
-        # Initialize LLM client
-        self.llm_client = LLMClient(
-            endpoint=azure_endpoint,
-            api_key=azure_api_key,
-        )
+        # Initialize LLM client using new multi-provider factory
+        if model_spec:
+            self.llm_client = create_client(model_spec)
+            logger.info(f"Using LLM: {model_spec}")
+        else:
+            # Backward compatibility: use LLMClient wrapper
+            self.llm_client = LLMClient(
+                endpoint=azure_endpoint,
+                api_key=azure_api_key,
+            )
 
         # Initialize components (for backward compatibility)
         self.component_selector = ComponentSelector(self.llm_client)
@@ -175,30 +192,29 @@ class GenerativeUIPipeline:
 
     def _convert_to_prompt_types(
         self,
-        recommendation: DLRecommendation,
-        scene: DLSceneConfig,
+        recommendation: Recommendation,
+        scene: SceneConfig,
     ) -> tuple[Recommendation, SceneConfig]:
-        """Convert data_loader types to prompts types."""
-        rec = Recommendation(
-            id=recommendation.id,
-            type=recommendation.type,
-            content=recommendation.content,
-            start_time=recommendation.start_time,
-            end_time=recommendation.end_time,
-        )
+        """Convert types for prompt strategy compatibility.
 
-        sc = SceneConfig(
-            name=scene.name,
-            allowed_components=scene.allowed_components,
-        )
-
-        return rec, sc
+        Since we now use unified types from schema module, this is mostly a passthrough.
+        """
+        return recommendation, scene
 
     def _extract_visual_context(
         self,
         recommendation: Recommendation,
     ) -> Optional[dict]:
-        """Extract visual context for a recommendation."""
+        """Extract visual context for a recommendation.
+
+        Prioritizes pre-extracted frames from metadata, falls back to real-time extraction.
+        """
+        # Priority 1: Use pre-extracted frames from ExampleLoader
+        if hasattr(recommendation, 'metadata') and recommendation.metadata:
+            if "frame_paths" in recommendation.metadata and "sample_dir" in recommendation.metadata:
+                return self._load_preextracted_frames(recommendation)
+
+        # Priority 2: Real-time extraction (legacy DataLoader or when no pre-extracted frames)
         if not self.frame_extractor or not self.visual_generator:
             return None
 
@@ -244,10 +260,134 @@ class GenerativeUIPipeline:
             logger.error(f"Failed to extract visual context: {e}")
             return None
 
+    def _load_preextracted_frames(self, recommendation: Recommendation) -> Optional[dict]:
+        """Load visual context from pre-extracted frames.
+
+        Args:
+            recommendation: Recommendation with metadata containing frame_paths and sample_dir.
+
+        Returns:
+            Visual context dict or None if loading fails.
+        """
+        import base64
+        import cv2
+
+        try:
+            sample_dir = Path(recommendation.metadata["sample_dir"])
+            frame_paths = recommendation.metadata["frame_paths"]
+
+            if not frame_paths:
+                logger.warning(f"No pre-extracted frames listed for {recommendation.id}")
+                return None
+
+            # Load frames as numpy arrays for VisualContextGenerator
+            frames_np = []
+            frames_base64 = []
+
+            for frame_rel_path in frame_paths:
+                frame_abs_path = sample_dir / frame_rel_path
+                if frame_abs_path.exists():
+                    # Load image with OpenCV
+                    frame = cv2.imread(str(frame_abs_path))
+                    if frame is not None:
+                        frames_np.append(frame)
+                        # Also encode to base64 for direct mode
+                        _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
+                        b64_str = base64.b64encode(buffer).decode('utf-8')
+                        frames_base64.append(b64_str)
+                    else:
+                        logger.warning(f"Failed to load frame: {frame_abs_path}")
+                else:
+                    logger.warning(f"Frame not found: {frame_abs_path}")
+
+            if not frames_np:
+                logger.warning(f"No valid pre-extracted frames found for {recommendation.id}")
+                return None
+
+            logger.debug(f"Loaded {len(frames_np)} pre-extracted frames for {recommendation.id}")
+
+            # Use VisualContextGenerator if available for consistent processing
+            if self.visual_generator:
+                context = self.visual_generator.generate_context(frames_np, recommendation)
+                return context.to_dict()
+
+            # Fallback: Return frames with base64 encoding for direct mode
+            return {
+                "mode": "direct",
+                "frames_base64": frames_base64,
+                "description": f"Loaded {len(frames_base64)} pre-extracted frames",
+                "metadata": {
+                    "num_frames": len(frames_base64),
+                    "encoding": "base64",
+                    "format": "jpeg",
+                },
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to load pre-extracted frames for {recommendation.id}: {e}")
+            return None
+
+    def _save_component_hierarchical(
+        self,
+        recommendation: Recommendation,
+        component: dict,
+    ) -> None:
+        """Save a component to the hierarchical output structure.
+
+        Output structure: output/Task2.x/Participant/sample_xxx/{strategy}.json
+
+        Args:
+            recommendation: The source recommendation with metadata.
+            component: The generated component to save.
+        """
+        metadata = getattr(recommendation, 'metadata', {}) or {}
+        task_name = metadata.get('task_name', '')
+        sample_name = metadata.get('sample_name', '')
+        participant = metadata.get('participant', self.participant)
+
+        if not task_name or not sample_name:
+            # Fallback: try to parse from sample_dir
+            sample_dir = metadata.get('sample_dir', '')
+            if sample_dir:
+                parts = Path(sample_dir).parts
+                # Find Task2.x part
+                task_idx = next((i for i, p in enumerate(parts) if p.startswith('Task')), -1)
+                if task_idx >= 0 and task_idx + 2 < len(parts):
+                    task_name = parts[task_idx]
+                    participant = parts[task_idx + 1]
+                    sample_name = parts[task_idx + 2]
+
+        if not task_name or not sample_name:
+            logger.warning(f"Cannot determine hierarchical path for {recommendation.id}, skipping individual save")
+            return
+
+        # Build output path: output/Task2.x/Participant/sample_xxx/
+        output_sample_dir = self.output_path / task_name / participant / sample_name
+        output_sample_dir.mkdir(parents=True, exist_ok=True)
+
+        # Use strategy name + model as filename (e.g., v1_baseline_azure_gpt-4o.json)
+        model_suffix = self.model_spec.replace(':', '_')
+        component_file = output_sample_dir / f"{self.prompt_strategy_name}_{model_suffix}.json"
+
+        # Add metadata to component
+        component["metadata"] = component.get("metadata", {})
+        component["metadata"]["strategy"] = self.prompt_strategy_name
+        component["metadata"]["model"] = self.model_spec
+        component["metadata"]["generated_at"] = datetime.now().isoformat()
+        component["metadata"]["visual_mode"] = self.visual_mode if self.enable_visual else None
+        component["metadata"]["source_sample"] = f"{task_name}/{participant}/{sample_name}"
+
+        try:
+            with open(component_file, "w", encoding="utf-8") as f:
+                json.dump(component, f, ensure_ascii=False, indent=2)
+            logger.debug(f"Saved component to {component_file}")
+        except Exception as e:
+            logger.error(f"Failed to save component to {component_file}: {e}")
+
     def process_recommendation(
         self,
-        recommendation: DLRecommendation,
-        scene: DLSceneConfig,
+        recommendation: Recommendation,
+        scene: SceneConfig,
     ) -> dict[str, Any] | None:
         """Process a single recommendation and generate A2UI component."""
         try:
@@ -330,25 +470,31 @@ class GenerativeUIPipeline:
                 if a2ui_session:
                     a2ui_session.create_surface([component])
 
+                # Save individual component to hierarchical structure
+                if save_individual:
+                    self._save_component_hierarchical(recommendation, component)
+
         # Save results
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         strategy_suffix = f"_{self.prompt_strategy_name}"
+        # Add model suffix (e.g., _azure_gpt-4o, _gemini_gemini-3-flash)
+        model_suffix = f"_{self.model_spec.replace(':', '_')}"
 
         # Save summary file
-        summary_file = self.output_path / f"a2ui_components{strategy_suffix}_{timestamp}.json"
+        summary_file = self.output_path / f"a2ui_components{strategy_suffix}{model_suffix}_{timestamp}.json"
         with open(summary_file, "w", encoding="utf-8") as f:
             json.dump(results, f, ensure_ascii=False, indent=2)
 
         # Save by scene
         for scene_name, components in scene_results.items():
             if components:
-                scene_file = self.output_path / f"a2ui_{scene_name}{strategy_suffix}_{timestamp}.json"
+                scene_file = self.output_path / f"a2ui_{scene_name}{strategy_suffix}{model_suffix}_{timestamp}.json"
                 with open(scene_file, "w", encoding="utf-8") as f:
                     json.dump(components, f, ensure_ascii=False, indent=2)
 
         # Save A2UI messages if enabled
         if a2ui_session:
-            messages_file = self.output_path / f"a2ui_messages{strategy_suffix}_{timestamp}.json"
+            messages_file = self.output_path / f"a2ui_messages{strategy_suffix}{model_suffix}_{timestamp}.json"
             with open(messages_file, "w", encoding="utf-8") as f:
                 json.dump(a2ui_session.export_messages(), f, ensure_ascii=False, indent=2)
 
@@ -356,6 +502,7 @@ class GenerativeUIPipeline:
         print()
         print(f"✅ Pipeline completed!")
         print(f"   Strategy: {self.prompt_strategy_name}")
+        print(f"   Model: {self.model_spec}")
         print(f"   Total components: {len(results)}")
         for scene_name, components in scene_results.items():
             print(f"   - {scene_name}: {len(components)}")
@@ -442,24 +589,30 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Run with default v1_baseline strategy
+  # Run with default Azure GPT-4o
   python -m agent.src.pipeline --limit 10
 
-  # Run with v3_with_visual strategy and video
-  python -m agent.src.pipeline --strategy v3_with_visual --enable-visual --limit 5
+  # Run with Gemini
+  python -m agent.src.pipeline --model gemini:gemini-2.5-pro --limit 5
+
+  # Run with Claude
+  python -m agent.src.pipeline --model claude:claude-sonnet-4-5 --limit 5
+
+  # Run with Claude thinking model (auto-enables extended thinking)
+  python -m agent.src.pipeline --model claude:claude-opus-4-5-thinking --limit 5
+
+  # Run with visual context
+  python -m agent.src.pipeline --model gemini:gemini-2.5-flash --strategy v3_with_visual --enable-visual --limit 5
 
   # Compare strategies
   python -m agent.src.pipeline --compare v1_baseline v3_with_visual --limit 5
-
-  # Output in A2UI standard format
-  python -m agent.src.pipeline --strategy v3_with_visual --output-format a2ui_standard
         """,
     )
 
     parser.add_argument(
         "--data-path",
-        default="/home/v-tangxin/GUI/data/ego-dataset",
-        help="数据集路径",
+        default="/home/v-tangxin/GUI/agent",
+        help="数据集路径 (应包含 example/ 文件夹)",
     )
     parser.add_argument(
         "--output-path",
@@ -487,7 +640,7 @@ Examples:
     # New arguments
     parser.add_argument(
         "--strategy",
-        choices=["v1_baseline", "v2_google_gui", "v3_with_visual"],
+        choices=["v1_baseline", "v2_google_gui", "v3_with_visual", "v2_smart_glasses"],
         default="v1_baseline",
         help="Prompt 策略",
     )
@@ -499,8 +652,8 @@ Examples:
     parser.add_argument(
         "--visual-mode",
         choices=["direct", "description"],
-        default="description",
-        help="视觉上下文模式",
+        default="direct",
+        help="视觉上下文模式 (默认: direct)",
     )
     parser.add_argument(
         "--output-format",
@@ -533,10 +686,31 @@ Examples:
         help="保存 A2UI 消息序列",
     )
     parser.add_argument(
+        "--overlay",
+        action="store_true",
+        help="生成视频叠加预览",
+    )
+    parser.add_argument(
+        "--overlay-duration",
+        type=float,
+        default=2.0,
+        help="UI 显示时长（秒）",
+    )
+    parser.add_argument(
+        "--preview-server-url",
+        default="http://localhost:8080",
+        help="Preview server URL for overlay rendering",
+    )
+    parser.add_argument(
         "--verbose",
         "-v",
         action="store_true",
         help="详细输出",
+    )
+    parser.add_argument(
+        "--model",
+        default="azure:gpt-4o",
+        help="LLM 模型 (格式: provider:model_name, 例如 azure:gpt-4o, gemini:gemini-2.5-pro, claude:claude-sonnet-4-5)",
     )
 
     args = parser.parse_args()
@@ -560,6 +734,7 @@ Examples:
         video_path=args.video_path,
         num_frames=args.num_frames,
         google_gui_template=args.google_gui_template,
+        model_spec=args.model,
     )
 
     # Run comparison or single strategy
@@ -575,6 +750,58 @@ Examples:
             limit=args.limit,
             save_a2ui_messages=args.save_a2ui_messages,
         )
+
+    # Run overlay processing if enabled
+    if args.overlay:
+        print()
+        print("🎬 Generating video overlays...")
+        from .video.overlay import VideoOverlayProcessor
+
+        overlay_processor = VideoOverlayProcessor(
+            preview_server_url=args.preview_server_url,
+            overlay_duration=args.overlay_duration,
+        )
+
+        # Find generated UI JSON files and their corresponding samples
+        output_path = Path(args.output_path)
+        data_path = Path(args.data_path) / "example"
+
+        overlay_count = 0
+        for task_dir in output_path.iterdir():
+            if not task_dir.is_dir() or not task_dir.name.startswith("Task"):
+                continue
+
+            for participant_dir in task_dir.iterdir():
+                if not participant_dir.is_dir():
+                    continue
+
+                for sample_dir in participant_dir.iterdir():
+                    if not sample_dir.is_dir() or not sample_dir.name.startswith("sample"):
+                        continue
+
+                    # Find UI JSON for this sample
+                    ui_json = sample_dir / f"{args.strategy}.json"
+                    if not ui_json.exists():
+                        continue
+
+                    # Find corresponding source sample directory
+                    source_sample = data_path / task_dir.name / participant_dir.name / sample_dir.name
+                    if not source_sample.exists():
+                        continue
+
+                    result = overlay_processor.process_sample(
+                        sample_dir=source_sample,
+                        ui_json_path=ui_json,
+                        output_dir=output_path,
+                        strategy_name=args.strategy,
+                    )
+
+                    if result:
+                        overlay_count += 1
+                        if args.verbose:
+                            print(f"   ✓ {result.name}")
+
+        print(f"   Generated {overlay_count} overlay videos")
 
 
 if __name__ == "__main__":

@@ -28,6 +28,9 @@ export class Button extends Root {
   @property()
   accessor action: Types.Action | null = null;
 
+  @property({ type: String })
+  accessor variant: "primary" | "secondary" | "ghost" | "icon_only" = "primary";
+
   static styles = [
     structuralStyles,
     css`
@@ -40,8 +43,9 @@ export class Button extends Root {
   ];
 
   render() {
+    const variantClass = `a2ui-btn-${this.variant}`;
     return html`<button
-      class=${classMap(this.theme.components.Button)}
+      class="${classMap(this.theme.components.Button)} ${variantClass}"
       style=${this.theme.additionalStyles?.Button
         ? styleMap(this.theme.additionalStyles?.Button)
         : nothing}

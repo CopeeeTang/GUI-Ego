@@ -11,42 +11,96 @@ from .llm_client import LLMClient
 from .data_loader import Recommendation, SceneConfig
 
 
-# 组件定义
+# A2UI 原子组件定义 - 与 Preview 渲染器兼容
 COMPONENT_DEFINITIONS = {
     "navigation": {
-        "map_card": {
-            "description": "地图卡片，用于显示位置、导航路线、附近的兴趣点（如共享单车、建筑）",
-            "use_cases": ["找共享单车", "导航到目的地", "显示附近设施", "估算距离/时间"],
+        "Card": {
+            "description": "容器卡片，用于组合显示导航信息、地点详情、路线选项",
+            "use_cases": ["显示目的地信息", "展示路线选项", "呈现附近地点", "导航卡片容器"],
         },
-        "ar_label": {
-            "description": "AR 标签，悬浮在物理对象上方显示信息",
-            "use_cases": ["识别建筑名称", "标注地标", "显示方向指示", "物体识别结果"],
+        "Text": {
+            "description": "文本元素，显示标题、描述、距离、时间等文字信息",
+            "use_cases": ["显示地点名称", "显示距离时间", "路线描述", "状态提示"],
         },
-        "direction_arrow": {
-            "description": "方向指引箭头，显示前进方向和距离",
-            "use_cases": ["步行导航", "指示转弯方向", "显示目的地距离"],
+        "Button": {
+            "description": "交互按钮，触发导航、选择路线、查看详情等操作",
+            "use_cases": ["开始导航", "选择路线", "查看详情", "取消操作"],
         },
-        "comparison_card": {
-            "description": "对比卡片，并排比较两个或多个选项",
-            "use_cases": ["比较步行vs骑车时间", "比较路线选项", "决策支持"],
+        "Icon": {
+            "description": "图标元素，表示方向、地点类型、交通方式等",
+            "use_cases": ["方向箭头", "地点图标", "交通工具图标", "状态指示"],
+        },
+        "Badge": {
+            "description": "标签徽章，显示距离、时间、状态等简短信息",
+            "use_cases": ["显示距离", "显示预计时间", "状态标签", "类型标记"],
+        },
+        "Row": {
+            "description": "水平布局容器，横向排列子元素",
+            "use_cases": ["并排显示选项", "图标+文字组合", "操作按钮组"],
+        },
+        "Column": {
+            "description": "垂直布局容器，纵向排列子元素",
+            "use_cases": ["信息列表", "多行内容", "分步指引"],
         },
     },
     "shopping": {
-        "comparison_card": {
-            "description": "对比卡片，并排比较商品属性",
-            "use_cases": ["比较商品新鲜度", "比较价格", "比较营养成分", "决策支持"],
+        "Card": {
+            "description": "容器卡片，用于显示商品信息、价格比较、营养数据",
+            "use_cases": ["商品信息卡", "价格比较卡", "营养信息卡", "推荐商品卡"],
         },
-        "nutrition_card": {
-            "description": "营养信息卡片，显示食品的营养数据",
-            "use_cases": ["显示热量", "显示蛋白质/碳水/脂肪", "显示成分列表", "健康评级"],
+        "Text": {
+            "description": "文本元素，显示商品名称、价格、描述、营养成分等",
+            "use_cases": ["商品名称", "价格显示", "营养数值", "描述文字"],
         },
-        "price_calculator": {
-            "description": "价格计算器，计算单价、总价、性价比",
-            "use_cases": ["计算单价", "比较性价比", "估算总价"],
+        "Button": {
+            "description": "交互按钮，添加购物车、查看详情、比较商品等",
+            "use_cases": ["添加购物车", "查看详情", "比较选中", "立即购买"],
         },
-        "ar_label": {
-            "description": "AR 标签，叠加在商品上显示信息",
-            "use_cases": ["显示商品名称", "显示价格", "标注推荐商品"],
+        "Badge": {
+            "description": "标签徽章，显示折扣、新品、推荐等标记",
+            "use_cases": ["折扣标签", "新品标记", "推荐标签", "健康评级"],
+        },
+        "List": {
+            "description": "列表容器，展示多个商品或属性条目",
+            "use_cases": ["商品列表", "营养成分列表", "比较项目列表"],
+        },
+        "Row": {
+            "description": "水平布局容器，横向排列子元素",
+            "use_cases": ["价格+单位", "图标+文字", "操作按钮组"],
+        },
+        "Column": {
+            "description": "垂直布局容器，纵向排列子元素",
+            "use_cases": ["商品详情", "营养信息", "多行描述"],
+        },
+        "Icon": {
+            "description": "图标元素，表示商品类型、状态、操作等",
+            "use_cases": ["商品类型图标", "健康指示", "操作图标"],
+        },
+    },
+    "general": {
+        "Card": {
+            "description": "通用容器卡片，用于组合展示各类信息",
+            "use_cases": ["信息卡片", "通知卡片", "详情展示", "AR标签容器"],
+        },
+        "Text": {
+            "description": "文本元素，显示各类文字内容",
+            "use_cases": ["标题文字", "描述内容", "提示信息", "状态文字"],
+        },
+        "Icon": {
+            "description": "图标元素，表示类型、状态、操作等",
+            "use_cases": ["类型图标", "状态指示", "操作图标"],
+        },
+        "Badge": {
+            "description": "标签徽章，显示简短的状态或分类信息",
+            "use_cases": ["状态标签", "分类标记", "数量徽章"],
+        },
+        "Row": {
+            "description": "水平布局容器，横向排列子元素",
+            "use_cases": ["图标+文字", "多元素并排", "操作组"],
+        },
+        "Column": {
+            "description": "垂直布局容器，纵向排列子元素",
+            "use_cases": ["多行内容", "信息列表", "分组展示"],
         },
     },
 }
