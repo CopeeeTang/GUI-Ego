@@ -227,7 +227,8 @@ class GoogleGUIPromptStrategy(PromptStrategy):
         result = self._llm_client.complete_json(
             system_prompt=GOOGLE_A2UI_SYSTEM_PROMPT,
             user_prompt=prompt,
-            temperature=0.5,
+            temperature=0.1,
+            max_tokens=14000,  # Increased for Gemini 3's thinking tokens
         )
 
         # Sanitize output to ensure semantic-only structure

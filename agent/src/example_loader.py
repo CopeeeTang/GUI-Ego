@@ -98,33 +98,39 @@ class ExampleLoader:
 
         # Scan Task2.1 and Task2.2 directories
         for task_dir in sorted(self.example_path.glob("Task*")):
-            participant_dir = task_dir / self.participant
-            if not participant_dir.exists():
-                logger.debug(f"Participant directory not found: {participant_dir}")
-                continue
+            # If participant is "all", load all participants; otherwise load specific one
+            if self.participant.lower() == "all":
+                participant_dirs = sorted(task_dir.glob("P*"))
+            else:
+                participant_dirs = [task_dir / self.participant]
 
-            # Load each sample
-            for sample_dir in sorted(participant_dir.glob("sample_*")):
-                rawdata_path = sample_dir / "rawdata.json"
-                if not rawdata_path.exists():
-                    logger.warning(f"Missing rawdata.json in {sample_dir}")
+            for participant_dir in participant_dirs:
+                if not participant_dir.exists():
+                    logger.debug(f"Participant directory not found: {participant_dir}")
                     continue
 
-                try:
-                    rawdata = self._load_rawdata(rawdata_path)
-                    if rawdata:
-                        rec = self._convert_to_recommendation(rawdata, sample_dir)
-                        scene_type = rawdata.get("scene_type", "general")
+                # Load each sample
+                for sample_dir in sorted(participant_dir.glob("sample_*")):
+                    rawdata_path = sample_dir / "rawdata.json"
+                    if not rawdata_path.exists():
+                        logger.warning(f"Missing rawdata.json in {sample_dir}")
+                        continue
 
-                        # Create scene config if not exists
-                        if scene_type not in self.scenes:
-                            self.scenes[scene_type] = self._infer_scene_config(scene_type)
+                    try:
+                        rawdata = self._load_rawdata(rawdata_path)
+                        if rawdata:
+                            rec = self._convert_to_recommendation(rawdata, sample_dir)
+                            scene_type = rawdata.get("scene_type", "general")
 
-                        self.samples.append((rec, self.scenes[scene_type]))
-                        logger.debug(f"Loaded sample: {rec.id} ({scene_type})")
+                            # Create scene config if not exists
+                            if scene_type not in self.scenes:
+                                self.scenes[scene_type] = self._infer_scene_config(scene_type)
 
-                except Exception as e:
-                    logger.error(f"Failed to load {rawdata_path}: {e}")
+                            self.samples.append((rec, self.scenes[scene_type]))
+                            logger.debug(f"Loaded sample: {rec.id} ({scene_type})")
+
+                    except Exception as e:
+                        logger.error(f"Failed to load {rawdata_path}: {e}")
 
     def _load_user_profiles(self) -> dict:
         """Load user profiles from example/user_profiles.json.

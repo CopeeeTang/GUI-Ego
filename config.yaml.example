@@ -35,3 +35,16 @@ providers:
       - claude-sonnet-4-5-thinking
       - claude-opus-4-5
       - claude-opus-4-5-thinking
+
+
+开启新会话	tmux new -s 会话名 (例如 tmux new -s claude)
+离开会话（后台运行）	先按 Ctrl + b，松开后再按 d (Detach)
+查看所有在跑的会话	tmux ls
+重新进入某个会话	tmux attach -t 会话名
+彻底关闭会话	在会话里输入 exit 或 tmux kill-session -t 会话名
+
+左右分屏：Ctrl + b 然后再按 %
+上下分屏：Ctrl + b 然后再按 " (引号)
+切换面板：Ctrl + b 然后再按 方向键
+关闭当前面板：输入 exit 或按 Ctrl + d
+全屏/取消全屏当前面板：Ctrl + b 然后按 z (非常有用！)

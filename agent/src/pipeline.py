@@ -30,6 +30,7 @@ from .prompts.v3_with_visual import VisualPromptStrategy
 from .prompts.v2_smart_glasses import SmartGlassesPromptStrategy
 from .a2ui.converter import A2UIConverter
 from .a2ui.message_builder import A2UIMessageBuilder, A2UISession
+from .output_validator import validate_a2ui_component, normalize_component, move_visual_anchor_to_metadata, normalize_props
 
 logger = logging.getLogger(__name__)
 
@@ -406,14 +407,25 @@ class GenerativeUIPipeline:
                 logger.warning(f"Strategy returned no component for: {recommendation.content[:30]}...")
                 return None
 
+            # Validate and normalize output format for Preview compatibility
+            is_valid, error = validate_a2ui_component(component)
+            if not is_valid:
+                logger.warning(f"Component validation failed: {error}, attempting normalization...")
+                component = normalize_component(component)
+                # Move visual_anchor to metadata if present
+                component = move_visual_anchor_to_metadata(component)
+
+            # Normalize prop keys (e.g. text/content -> label for Button)
+            component = normalize_props(component)
+
             # Convert to A2UI standard format if configured
             if self.a2ui_converter and self.output_format == "a2ui_standard":
                 component = self.a2ui_converter.convert(component)
 
-            # Validate
+            # Final validation
             is_valid, error = self.validator.validate_component(component)
             if not is_valid:
-                logger.warning(f"Component validation failed: {error}")
+                logger.warning(f"Component validation failed after normalization: {error}")
                 # Still return the component but mark as unvalidated
                 component["metadata"] = component.get("metadata", {})
                 component["metadata"]["validation_error"] = error
@@ -434,7 +446,7 @@ class GenerativeUIPipeline:
         """Run the pipeline.
 
         Args:
-            scenes: List of scenes to process.
+            scenes: List of scenes to process. If None, processes all available scenes.
             limit: Maximum number of recommendations to process.
             save_individual: Whether to save individual component files.
             save_a2ui_messages: Whether to save A2UI message sequences.
@@ -443,7 +455,10 @@ class GenerativeUIPipeline:
             List of generated components.
         """
         if scenes is None:
-            scenes = ["navigation", "shopping"]
+            # Default to all available scenes from data loader
+            scenes = self.data_loader.get_scene_types()
+            if not scenes:
+                scenes = ["navigation", "shopping"]  # Fallback
 
         print(f"🚀 Starting Generative UI Pipeline")
         print(f"   Strategy: {self.prompt_strategy_name}")
@@ -474,30 +489,6 @@ class GenerativeUIPipeline:
                 if save_individual:
                     self._save_component_hierarchical(recommendation, component)
 
-        # Save results
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        strategy_suffix = f"_{self.prompt_strategy_name}"
-        # Add model suffix (e.g., _azure_gpt-4o, _gemini_gemini-3-flash)
-        model_suffix = f"_{self.model_spec.replace(':', '_')}"
-
-        # Save summary file
-        summary_file = self.output_path / f"a2ui_components{strategy_suffix}{model_suffix}_{timestamp}.json"
-        with open(summary_file, "w", encoding="utf-8") as f:
-            json.dump(results, f, ensure_ascii=False, indent=2)
-
-        # Save by scene
-        for scene_name, components in scene_results.items():
-            if components:
-                scene_file = self.output_path / f"a2ui_{scene_name}{strategy_suffix}{model_suffix}_{timestamp}.json"
-                with open(scene_file, "w", encoding="utf-8") as f:
-                    json.dump(components, f, ensure_ascii=False, indent=2)
-
-        # Save A2UI messages if enabled
-        if a2ui_session:
-            messages_file = self.output_path / f"a2ui_messages{strategy_suffix}{model_suffix}_{timestamp}.json"
-            with open(messages_file, "w", encoding="utf-8") as f:
-                json.dump(a2ui_session.export_messages(), f, ensure_ascii=False, indent=2)
-
         # Print statistics
         print()
         print(f"✅ Pipeline completed!")
@@ -506,7 +497,7 @@ class GenerativeUIPipeline:
         print(f"   Total components: {len(results)}")
         for scene_name, components in scene_results.items():
             print(f"   - {scene_name}: {len(components)}")
-        print(f"   Output: {summary_file}")
+        print(f"   Components saved to individual sample directories")
 
         if self.enable_visual and self.frame_extractor:
             print(f"   Video: {self.frame_extractor.video_path.name}")
@@ -627,8 +618,8 @@ Examples:
     parser.add_argument(
         "--scenes",
         nargs="+",
-        default=["navigation", "shopping"],
-        help="要处理的场景",
+        default=None,
+        help="要处理的场景 (默认: 所有可用场景)",
     )
     parser.add_argument(
         "--limit",

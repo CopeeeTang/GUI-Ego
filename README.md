@@ -1,5 +1,18 @@
 # Smart Glasses GenUI 数据加工与生成系统
 
+目前有四个常用的Claude code窗口
+1.关于proactive的benchmark的跑分，用自己搭的系统
+proactive-system
+claudex --resume 1d6b777b-249f-4713-8bb6-7c154418861d 
+2.关于memory的benchmark的讨论？还没开始，有一个idea是tool- augmented agent来解决问题，但是问题可能是有什么适合流式视频的工具，以及如何利用工具，会不会像人看视频会生成每段的摘要和时间点来划分？
+memory
+
+3.关于目前Streaming+GUI系统在厨房场景下的优化
+cc-0216-system  
+claudex --resume 1d6b777b-249f-4713-8bb6-7c154418861d
+
+4.关于GUI研究问题的讨论
+0216-rq
 **Last Updated:** 2026-02-02
 
 基于 Ego-centric 视频数据集，利用多模态 LLM 生成符合 A2UI 协议的智能眼镜 GUI 数据。

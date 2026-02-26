@@ -92,7 +92,19 @@ coverage.xml
 node_modules/
 .wireit/
 
+# Claude Code worktrees
+.claude/worktrees/
+
 # Project-specific
 temp/
 agent/output/
 agent/example/
+output/
+proassist_env/
+.serena/
+/smartfocus-glasses-ui
+
+# Proactive project large dirs
+proactive-project/model_cache/
+proactive-project/mmduet2/
+proactive-project/mmduet2_env/

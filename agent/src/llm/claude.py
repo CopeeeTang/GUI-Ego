@@ -216,18 +216,82 @@ class ClaudeClient(LLMClientBase):
         """Extract text from Claude response, handling thinking blocks.
 
         Args:
-            response: Anthropic API response object.
+            response: Anthropic API response object or dict.
 
         Returns:
             Extracted text content.
+
+        Raises:
+            ValueError: If response is empty or has no text content (triggers retry).
         """
         text_parts = []
 
-        for block in response.content:
-            if block.type == "text":
-                text_parts.append(block.text)
-            elif block.type == "thinking":
-                # Log thinking for debugging but don't include in response
-                logger.debug(f"Thinking: {block.thinking[:200]}...")
+        # Handle both object and dict responses (proxy may return dict)
+        if hasattr(response, 'content'):
+            content = response.content
+        elif isinstance(response, dict) and 'content' in response:
+            content = response['content']
+        else:
+            # Log the actual response for debugging
+            logger.error(f"Unexpected response format: {type(response)}")
+            if isinstance(response, dict):
+                logger.error(f"Response keys: {list(response.keys())}")
+                # Check for error message in response
+                if 'error' in response:
+                    error_msg = response.get('error', {})
+                    if isinstance(error_msg, dict):
+                        error_text = error_msg.get('message', str(error_msg))
+                    else:
+                        error_text = str(error_msg)
+                    raise ValueError(f"API error: {error_text}")
+            logger.error(f"Response: {str(response)[:500]}")
+            raise ValueError("Invalid response format from Claude API - will retry")
 
-        return "".join(text_parts)
+        # Check if content is empty
+        if not content:
+            logger.warning("Empty content array in response - proxy may have failed")
+            raise ValueError("Empty response from Claude API - will retry")
+
+        for block in content:
+            # Handle both object and dict blocks
+            if hasattr(block, 'type'):
+                block_type = block.type
+                block_text = getattr(block, 'text', None)
+                block_thinking = getattr(block, 'thinking', None)
+            elif isinstance(block, dict):
+                block_type = block.get('type')
+                block_text = block.get('text')
+                block_thinking = block.get('thinking')
+            else:
+                logger.warning(f"Unknown block format: {type(block)}")
+                continue
+
+            if block_type == "text" and block_text:
+                # Strip markdown code blocks if present
+                text = block_text.strip()
+                if text.startswith("```"):
+                    lines = text.split("\n")
+                    if lines[0].startswith("```"):
+                        lines = lines[1:]
+                    if lines and lines[-1].strip() == "```":
+                        lines = lines[:-1]
+                    text = "\n".join(lines)
+                text_parts.append(text)
+            elif block_type == "thinking" and block_thinking:
+                # Log thinking for debugging but don't include in response
+                logger.debug(f"Thinking: {block_thinking[:200]}...")
+
+        result = "".join(text_parts)
+
+        if not result.strip():
+            logger.error(f"No text content extracted from response")
+            logger.error(f"Content blocks: {len(content)}")
+            for i, block in enumerate(content):
+                if hasattr(block, 'type'):
+                    logger.error(f"  Block {i}: type={block.type}")
+                elif isinstance(block, dict):
+                    logger.error(f"  Block {i}: type={block.get('type')}")
+            # Raise error to trigger retry
+            raise ValueError("No text content in response - will retry")
+
+        return result

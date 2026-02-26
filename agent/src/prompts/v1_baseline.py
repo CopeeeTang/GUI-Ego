@@ -1,11 +1,15 @@
 """V1 Baseline prompt strategy - wraps existing two-step approach."""
 
 import logging
+import uuid
 from typing import Any, Optional
 
 from .base import PromptStrategy, Recommendation, SceneConfig
 
 logger = logging.getLogger(__name__)
+
+# Container types that should have children
+CONTAINER_TYPES = {"Card", "Row", "Column", "List"}
 
 
 class BaselinePromptStrategy(PromptStrategy):
@@ -131,5 +135,44 @@ class BaselinePromptStrategy(PromptStrategy):
             "reasoning": selection.get("reasoning"),
             "confidence": selection.get("confidence"),
         }
+
+        # Normalize to A2UI standard format
+        component = self._normalize_to_a2ui(component)
+
+        return component
+
+    def _normalize_to_a2ui(self, component: dict) -> dict:
+        """Normalize v1 output to A2UI standard format.
+
+        Ensures the component has:
+        - id: Unique identifier
+        - children: Empty list for container types
+
+        Args:
+            component: The raw component from PropsFiller.
+
+        Returns:
+            Normalized component dict.
+        """
+        # Ensure id field exists
+        if "id" not in component:
+            comp_type = component.get("type", "component")
+            component["id"] = f"{comp_type.lower()}_{uuid.uuid4().hex[:8]}"
+
+        # Ensure props field exists
+        if "props" not in component:
+            component["props"] = {}
+
+        # Ensure children field exists for container types
+        comp_type = component.get("type")
+        if comp_type in CONTAINER_TYPES and "children" not in component:
+            component["children"] = []
+
+        # Recursively normalize children if present
+        if "children" in component and isinstance(component["children"], list):
+            component["children"] = [
+                self._normalize_to_a2ui(child) if isinstance(child, dict) else child
+                for child in component["children"]
+            ]
 
         return component

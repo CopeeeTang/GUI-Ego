@@ -1,7 +1,8 @@
 """
 Gemini Client
 
-Implementation of LLM client for Google Gemini API via local proxy.
+Implementation of LLM client for Google Gemini API.
+Supports both direct official API access and local proxy.
 """
 
 import logging
@@ -11,9 +12,29 @@ from .base import LLMClientBase, ModelConfig
 
 logger = logging.getLogger(__name__)
 
+# Short name → official API model ID mapping
+# Users can write either short names or full official names.
+GEMINI_MODEL_ALIASES: dict[str, str] = {
+    "gemini-3-flash": "gemini-3-flash-preview",
+    "gemini-3-pro": "gemini-3-pro-preview",
+    "gemini-3-pro-image": "gemini-3-pro-image-preview",
+    "gemini-3-flash-image": "gemini-3-flash-image-preview",
+}
+
+
+def resolve_gemini_model(model_name: str, use_proxy: bool) -> str:
+    """Resolve model name, applying aliases for official API.
+
+    When using a proxy, pass names through as-is (proxy may have its own routing).
+    When direct, map short names to official `-preview` suffixed names.
+    """
+    if use_proxy:
+        return model_name
+    return GEMINI_MODEL_ALIASES.get(model_name, model_name)
+
 
 class GeminiClient(LLMClientBase):
-    """Google Gemini client implementation via local proxy."""
+    """Google Gemini client — supports direct API and proxy modes."""
 
     def __init__(self, config: ModelConfig):
         super().__init__(config)
@@ -21,7 +42,6 @@ class GeminiClient(LLMClientBase):
         if not config.api_key:
             raise ValueError("Gemini API key is required")
 
-        # Import here to avoid import errors if not installed
         try:
             import google.generativeai as genai
         except ImportError:
@@ -30,20 +50,32 @@ class GeminiClient(LLMClientBase):
                 "Run: pip install google-generativeai"
             )
 
-        # Configure with local proxy endpoint
-        # Use proxy as api_endpoint (e.g., http://127.0.0.1:7890)
-        proxy_endpoint = config.proxy or "http://127.0.0.1:7890"
+        # Decide mode: proxy or direct
+        use_proxy = bool(config.proxy)
 
-        genai.configure(
-            api_key=config.api_key,
-            transport="rest",
-            client_options={"api_endpoint": proxy_endpoint},
-        )
+        configure_kwargs = {
+            "api_key": config.api_key,
+            "transport": "rest",
+        }
+
+        if use_proxy:
+            configure_kwargs["client_options"] = {"api_endpoint": config.proxy}
+            mode_label = f"proxy: {config.proxy}"
+        else:
+            mode_label = "direct (official API)"
+
+        genai.configure(**configure_kwargs)
+
+        # Resolve model name (alias → official name when direct)
+        resolved_name = resolve_gemini_model(config.model_name, use_proxy)
 
         self._genai = genai
-        self._model = genai.GenerativeModel(config.model_name)
+        self._model = genai.GenerativeModel(resolved_name)
 
-        logger.info(f"Gemini client initialized: {config.model_name} (proxy: {proxy_endpoint})")
+        logger.info(
+            f"Gemini client initialized: {resolved_name} ({mode_label})"
+            + (f" [alias from {config.model_name}]" if resolved_name != config.model_name else "")
+        )
 
     def complete(
         self,
@@ -72,7 +104,7 @@ class GeminiClient(LLMClientBase):
                 full_prompt,
                 generation_config=generation_config,
             )
-            return response.text
+            return self._extract_response_text(response)
 
         return self._retry_with_backoff(_call)
 
@@ -111,7 +143,7 @@ class GeminiClient(LLMClientBase):
                 content_parts,
                 generation_config=generation_config,
             )
-            return response.text
+            return self._extract_response_text(response)
 
         return self._retry_with_backoff(_call)
 
@@ -151,10 +183,55 @@ class GeminiClient(LLMClientBase):
                 content_parts,
                 generation_config=generation_config,
             )
-            return response.text
+            return self._extract_response_text(response)
 
         result = self._retry_with_backoff(_call)
         return self._parse_json_response(result)
+
+    def _extract_response_text(self, response) -> str:
+        """Safely extract text from Gemini response, handling filters and errors."""
+        # Check if response was blocked by safety filters
+        if hasattr(response, 'prompt_feedback'):
+            feedback = response.prompt_feedback
+            if hasattr(feedback, 'block_reason') and feedback.block_reason:
+                logger.warning(f"Gemini response blocked: {feedback.block_reason}")
+                raise ValueError(f"Content blocked by Gemini safety filter: {feedback.block_reason}")
+
+        # Check if response has candidates
+        if not hasattr(response, 'candidates') or not response.candidates:
+            logger.error("Gemini response has no candidates")
+            raise ValueError("Gemini returned empty response - no candidates")
+
+        candidate = response.candidates[0]
+
+        # Check finish reason
+        if hasattr(candidate, 'finish_reason'):
+            finish_reason = str(candidate.finish_reason)
+            if 'SAFETY' in finish_reason:
+                logger.warning(f"Response blocked by safety: {finish_reason}")
+                raise ValueError(f"Content blocked by safety filter: {finish_reason}")
+            elif finish_reason not in ['STOP', 'MAX_TOKENS', '1']:  # 1 is STOP enum value
+                logger.warning(f"Unexpected finish reason: {finish_reason}")
+
+        # Try to get text
+        if hasattr(candidate, 'content') and hasattr(candidate.content, 'parts'):
+            parts = candidate.content.parts
+            if parts:
+                text = ''.join(part.text for part in parts if hasattr(part, 'text'))
+                if text.strip():
+                    return text
+
+        # Fallback to response.text
+        try:
+            text = response.text
+            if text and text.strip():
+                return text
+        except Exception as e:
+            logger.error(f"Failed to extract text from response: {e}")
+
+        # If we got here, response is empty
+        logger.error("Gemini response is empty or has no text content")
+        raise ValueError("Gemini returned empty response")
 
     def _format_image_content(self, image_b64: str, detail: str = "auto") -> dict:
         """Format image for Gemini API."""

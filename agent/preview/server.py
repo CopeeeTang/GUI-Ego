@@ -21,6 +21,16 @@ logger = logging.getLogger(__name__)
 # Default paths
 DEFAULT_OUTPUT_PATH = Path(__file__).parent.parent / "output"
 DEFAULT_STATIC_PATH = Path(__file__).parent / "static"
+DEFAULT_TEMPLATES_PATH = Path(__file__).parent / "templates"
+
+
+def load_template(name: str) -> str:
+    """Load HTML template from templates directory."""
+    template_path = DEFAULT_TEMPLATES_PATH / f"{name}.html"
+    if template_path.exists():
+        with open(template_path, 'r', encoding='utf-8') as f:
+            return f.read()
+    raise FileNotFoundError(f"Template not found: {template_path}")
 
 # HTML template for rendering A2UI components
 HTML_TEMPLATE = """<!DOCTYPE html>
@@ -498,6 +508,7 @@ VIDEO_OVERLAY_TEMPLATE = """<!DOCTYPE html>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Video Overlay Preview - {sample}</title>
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         * {{
             box-sizing: border-box;
@@ -783,7 +794,7 @@ VIDEO_OVERLAY_TEMPLATE = """<!DOCTYPE html>
 
     <div class="main-container">
         <div class="video-container" id="video-container">
-            <video id="video" src="{video_url}" preload="auto"></video>
+            <video id="video" src="{video_url}" preload="auto" controls></video>
             <div class="gaze-indicator" id="gaze-indicator" style="display: none;"></div>
             <div class="ui-overlay hidden" id="ui-overlay">
                 {component_html}
@@ -803,6 +814,12 @@ VIDEO_OVERLAY_TEMPLATE = """<!DOCTYPE html>
         </div>
 
         <div class="settings-panel">
+            <div class="setting-group">
+                <label>Model Selection</label>
+                <select id="model-selector" onchange="switchModel()">
+                    <option value="{strategy}">{strategy} (current)</option>
+                </select>
+            </div>
             <div class="setting-group">
                 <label>UI Display Duration (seconds)</label>
                 <input type="number" id="ui-duration" value="2.0" min="0.5" max="10" step="0.5" onchange="updateUIWindow()">
@@ -832,14 +849,43 @@ VIDEO_OVERLAY_TEMPLATE = """<!DOCTYPE html>
         <div class="export-panel" id="export-panel" style="display: none;">
             <h3>📹 Export Video with Overlay</h3>
             <p style="color: rgba(255,255,255,0.7); margin-bottom: 15px;">
-                Capture the current preview as a video file with UI overlay.
+                Export videos with UI overlay using Canvas rendering (no screen capture needed).
             </p>
-            <div class="controls">
-                <button onclick="startRecording()">🔴 Start Recording</button>
-                <button onclick="stopRecording()" id="stop-btn" disabled>⏹ Stop & Save</button>
-                <button onclick="captureScreenshot()">📷 Screenshot</button>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <!-- Single Export -->
+                <div style="border: 1px solid rgba(0,255,65,0.3); padding: 15px; border-radius: 8px;">
+                    <h4 style="color: #00ff41; margin-bottom: 10px;">Single Model Export</h4>
+                    <div class="controls" style="flex-direction: column; align-items: stretch;">
+                        <button onclick="startCanvasRecording()">🎬 Record Current Model</button>
+                        <button onclick="stopCanvasRecording()" id="canvas-stop-btn" disabled>⏹ Stop & Save</button>
+                        <button onclick="captureCanvasScreenshot()">📷 Screenshot</button>
+                    </div>
+                </div>
+
+                <!-- Batch Export -->
+                <div style="border: 1px solid rgba(255,165,0,0.3); padding: 15px; border-radius: 8px;">
+                    <h4 style="color: #ffa500; margin-bottom: 10px;">🚀 Batch Export All Models</h4>
+                    <div class="controls" style="flex-direction: column; align-items: stretch;">
+                        <div style="margin-bottom: 10px;">
+                            <label style="font-size: 12px; color: rgba(255,255,255,0.6);">Select models to export:</label>
+                            <div id="batch-model-list" style="max-height: 120px; overflow-y: auto; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; margin-top: 5px;">
+                                Loading models...
+                            </div>
+                        </div>
+                        <button onclick="startBatchExport()" id="batch-start-btn">📦 Export Selected Models</button>
+                        <button onclick="cancelBatchExport()" id="batch-cancel-btn" disabled>❌ Cancel</button>
+                    </div>
+                </div>
             </div>
-            <div class="export-status" id="export-status">Ready to record</div>
+
+            <div class="export-status" id="export-status">Ready to export</div>
+            <div id="batch-progress" style="display: none; margin-top: 10px;">
+                <div style="background: rgba(255,255,255,0.1); height: 8px; border-radius: 4px; overflow: hidden;">
+                    <div id="batch-progress-bar" style="background: linear-gradient(90deg, #00ff41, #00d4ff); height: 100%; width: 0%; transition: width 0.3s;"></div>
+                </div>
+                <div id="batch-progress-text" style="font-size: 12px; margin-top: 5px; color: rgba(255,255,255,0.7);"></div>
+            </div>
         </div>
 
         <div class="json-view" id="json-view">
@@ -854,6 +900,8 @@ VIDEO_OVERLAY_TEMPLATE = """<!DOCTYPE html>
         let mediaRecorder = null;
         let recordedChunks = [];
         let showGaze = true;
+        let currentModel = '{strategy}';
+        let availableModels = [];
 
         const video = document.getElementById('video');
         const uiOverlay = document.getElementById('ui-overlay');
@@ -861,7 +909,7 @@ VIDEO_OVERLAY_TEMPLATE = """<!DOCTYPE html>
         const timelineProgress = document.getElementById('timeline-progress');
         const timelineUIWindow = document.getElementById('timeline-ui-window');
 
-        // Load gaze data and rawdata
+        // Load gaze data, rawdata, and available models
         async function loadData() {{
             const sample = '{sample}';
 
@@ -882,6 +930,100 @@ VIDEO_OVERLAY_TEMPLATE = """<!DOCTYPE html>
                 console.log('Loaded rawdata:', rawData);
             }} catch (e) {{
                 console.warn('Failed to load rawdata:', e);
+            }}
+
+            // Load available models
+            try {{
+                const modelsResp = await fetch(`/api/models?sample=${{sample}}`);
+                const modelsJson = await modelsResp.json();
+                availableModels = modelsJson.models || [];
+                console.log(`Found ${{availableModels.length}} available models`);
+                populateModelSelector();
+            }} catch (e) {{
+                console.warn('Failed to load available models:', e);
+            }}
+        }}
+
+        // Populate model selector dropdown
+        function populateModelSelector() {{
+            const selector = document.getElementById('model-selector');
+            selector.innerHTML = '';
+
+            if (availableModels.length === 0) {{
+                selector.innerHTML = '<option value="{strategy}">{strategy} (current)</option>';
+                return;
+            }}
+
+            // Group models by strategy
+            const grouped = {{}};
+            availableModels.forEach(m => {{
+                if (!grouped[m.strategy]) grouped[m.strategy] = [];
+                grouped[m.strategy].push(m);
+            }});
+
+            // Create optgroups for each strategy
+            Object.keys(grouped).sort().forEach(strategy => {{
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = strategy;
+
+                grouped[strategy].forEach(m => {{
+                    const option = document.createElement('option');
+                    option.value = m.file;
+                    option.textContent = m.display_name;
+                    if (m.file === currentModel) {{
+                        option.selected = true;
+                    }}
+                    optgroup.appendChild(option);
+                }});
+
+                selector.appendChild(optgroup);
+            }});
+        }}
+
+        // Switch to a different model
+        async function switchModel() {{
+            const selector = document.getElementById('model-selector');
+            const newModel = selector.value;
+
+            if (newModel === currentModel) return;
+
+            const sample = '{sample}';
+
+            try {{
+                // Show loading state
+                uiOverlay.style.opacity = '0.5';
+
+                const resp = await fetch(`/api/ui?sample=${{sample}}&file=${{newModel}}`);
+                const data = await resp.json();
+
+                if (data.error) {{
+                    console.error('Failed to load model:', data.error);
+                    alert('Failed to load model: ' + data.error);
+                    // Revert selection
+                    selector.value = currentModel;
+                    return;
+                }}
+
+                // Update UI overlay with new HTML
+                uiOverlay.innerHTML = data.html;
+                currentModel = newModel;
+
+                // Update JSON view if visible
+                const jsonView = document.getElementById('json-view');
+                if (jsonView.classList.contains('visible')) {{
+                    jsonView.querySelector('pre').textContent = JSON.stringify(data.json, null, 2);
+                }}
+
+                // Update header meta info
+                document.querySelector('.header .meta').textContent = `{sample} | Model: ${{newModel}}`;
+
+                console.log('Switched to model:', newModel);
+            }} catch (e) {{
+                console.error('Failed to switch model:', e);
+                alert('Failed to switch model: ' + e.message);
+                selector.value = currentModel;
+            }} finally {{
+                uiOverlay.style.opacity = '1';
             }}
         }}
 
@@ -1033,6 +1175,10 @@ VIDEO_OVERLAY_TEMPLATE = """<!DOCTYPE html>
             const panel = document.getElementById('export-panel');
             panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
             document.getElementById('btn-export').classList.toggle('active');
+            // Populate batch model list when opening
+            if (panel.style.display === 'block') {{
+                populateBatchModelList();
+            }}
         }}
 
         // Update UI window display
@@ -1117,6 +1263,302 @@ VIDEO_OVERLAY_TEMPLATE = """<!DOCTYPE html>
                 URL.revokeObjectURL(url);
                 document.getElementById('export-status').textContent = 'Screenshot saved!';
             }});
+        }}
+
+        // ============================================
+        // Canvas-based Recording (no screen capture)
+        // ============================================
+
+        let canvasRecorder = null;
+        let canvasRecordedChunks = [];
+        let compositeCanvas = null;
+        let compositeCtx = null;
+        let isRecording = false;
+        let animationFrameId = null;
+        let batchExportCancelled = false;
+
+        // Initialize composite canvas for recording
+        function initCompositeCanvas() {{
+            if (!compositeCanvas) {{
+                compositeCanvas = document.createElement('canvas');
+                compositeCtx = compositeCanvas.getContext('2d');
+            }}
+            compositeCanvas.width = video.videoWidth || 1280;
+            compositeCanvas.height = video.videoHeight || 720;
+        }}
+
+        // Render a single composite frame (video + UI overlay)
+        async function renderCompositeFrame() {{
+            if (!compositeCtx) return;
+
+            // Draw video frame
+            compositeCtx.drawImage(video, 0, 0, compositeCanvas.width, compositeCanvas.height);
+
+            // Render UI overlay using html2canvas
+            const overlay = document.getElementById('ui-overlay');
+            if (overlay && !overlay.classList.contains('hidden') && typeof html2canvas !== 'undefined') {{
+                try {{
+                    const uiCanvas = await html2canvas(overlay, {{
+                        backgroundColor: null,
+                        scale: 1,
+                        logging: false,
+                        useCORS: true
+                    }});
+
+                    // Calculate position based on current gaze/position mode
+                    const overlayStyle = window.getComputedStyle(overlay);
+                    const left = parseFloat(overlayStyle.left) || compositeCanvas.width / 2;
+                    const top = parseFloat(overlayStyle.top) || compositeCanvas.height / 2;
+
+                    // Draw UI canvas onto composite (centered at position)
+                    const drawX = left - uiCanvas.width / 2;
+                    const drawY = top - uiCanvas.height / 2;
+                    compositeCtx.drawImage(uiCanvas, drawX, drawY);
+                }} catch (e) {{
+                    console.warn('html2canvas render failed:', e);
+                }}
+            }}
+        }}
+
+        // Start Canvas-based recording
+        async function startCanvasRecording() {{
+            try {{
+                initCompositeCanvas();
+                canvasRecordedChunks = [];
+                isRecording = true;
+
+                // Create stream from canvas
+                const stream = compositeCanvas.captureStream(30); // 30 FPS
+                canvasRecorder = new MediaRecorder(stream, {{
+                    mimeType: 'video/webm;codecs=vp9',
+                    videoBitsPerSecond: 5000000 // 5 Mbps
+                }});
+
+                canvasRecorder.ondataavailable = (e) => {{
+                    if (e.data.size > 0) canvasRecordedChunks.push(e.data);
+                }};
+
+                canvasRecorder.onstop = () => {{
+                    const blob = new Blob(canvasRecordedChunks, {{ type: 'video/webm' }});
+                    downloadBlob(blob, `overlay_{sample}_${{currentModel}}.webm`);
+                    document.getElementById('export-status').textContent = '✅ Recording saved!';
+                    isRecording = false;
+                }};
+
+                canvasRecorder.start(100); // Collect data every 100ms
+
+                // Start render loop
+                function renderLoop() {{
+                    if (!isRecording) return;
+                    renderCompositeFrame();
+                    animationFrameId = requestAnimationFrame(renderLoop);
+                }}
+                renderLoop();
+
+                // Auto-play video from start
+                video.currentTime = 0;
+                await video.play();
+
+                // Auto-stop when video ends
+                video.onended = () => {{
+                    if (isRecording) stopCanvasRecording();
+                }};
+
+                document.getElementById('canvas-stop-btn').disabled = false;
+                document.getElementById('export-status').textContent = '🔴 Recording... (will auto-stop at video end)';
+
+            }} catch (e) {{
+                document.getElementById('export-status').textContent = `Error: ${{e.message}}`;
+                isRecording = false;
+            }}
+        }}
+
+        // Stop Canvas-based recording
+        function stopCanvasRecording() {{
+            isRecording = false;
+            if (animationFrameId) {{
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }}
+            if (canvasRecorder && canvasRecorder.state !== 'inactive') {{
+                canvasRecorder.stop();
+            }}
+            video.pause();
+            document.getElementById('canvas-stop-btn').disabled = true;
+        }}
+
+        // Canvas-based screenshot
+        async function captureCanvasScreenshot() {{
+            initCompositeCanvas();
+            await renderCompositeFrame();
+
+            compositeCanvas.toBlob((blob) => {{
+                downloadBlob(blob, `screenshot_{sample}_${{currentModel}}.png`);
+                document.getElementById('export-status').textContent = '✅ Screenshot saved!';
+            }});
+        }}
+
+        // Helper function to download blob
+        function downloadBlob(blob, filename) {{
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }}
+
+        // ============================================
+        // Batch Export Functionality
+        // ============================================
+
+        // Populate batch model list when export panel opens
+        function populateBatchModelList() {{
+            const container = document.getElementById('batch-model-list');
+            if (availableModels.length === 0) {{
+                container.innerHTML = '<span style="color: rgba(255,255,255,0.5);">No models available</span>';
+                return;
+            }}
+
+            let html = '';
+            availableModels.forEach((m, idx) => {{
+                html += `
+                    <label style="display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer;">
+                        <input type="checkbox" class="batch-model-checkbox" value="${{m.file}}" checked>
+                        <span style="color: #fff;">${{m.display_name}}</span>
+                        <span style="color: rgba(255,255,255,0.4); font-size: 11px;">(${{m.strategy}})</span>
+                    </label>
+                `;
+            }});
+            container.innerHTML = html;
+        }}
+
+        // Start batch export
+        async function startBatchExport() {{
+            const checkboxes = document.querySelectorAll('.batch-model-checkbox:checked');
+            const selectedModels = Array.from(checkboxes).map(cb => cb.value);
+
+            if (selectedModels.length === 0) {{
+                alert('Please select at least one model to export.');
+                return;
+            }}
+
+            batchExportCancelled = false;
+            document.getElementById('batch-start-btn').disabled = true;
+            document.getElementById('batch-cancel-btn').disabled = false;
+            document.getElementById('batch-progress').style.display = 'block';
+
+            const sample = '{sample}';
+            let completed = 0;
+
+            for (const modelFile of selectedModels) {{
+                if (batchExportCancelled) {{
+                    updateBatchProgress(completed, selectedModels.length, 'Cancelled');
+                    break;
+                }}
+
+                updateBatchProgress(completed, selectedModels.length, `Exporting ${{modelFile}}...`);
+
+                try {{
+                    // Switch to this model
+                    const resp = await fetch(`/api/ui?sample=${{sample}}&file=${{modelFile}}`);
+                    const data = await resp.json();
+
+                    if (!data.error) {{
+                        // Update UI overlay
+                        document.getElementById('ui-overlay').innerHTML = data.html;
+                        currentModel = modelFile;
+
+                        // Wait for UI to render
+                        await new Promise(r => setTimeout(r, 200));
+
+                        // Record this model
+                        await recordModelVideo(modelFile);
+                        completed++;
+                    }}
+                }} catch (e) {{
+                    console.error(`Failed to export ${{modelFile}}:`, e);
+                }}
+            }}
+
+            updateBatchProgress(completed, selectedModels.length, `✅ Completed! Exported ${{completed}} videos.`);
+            document.getElementById('batch-start-btn').disabled = false;
+            document.getElementById('batch-cancel-btn').disabled = true;
+        }}
+
+        // Record a single model video (returns promise)
+        function recordModelVideo(modelFile) {{
+            return new Promise(async (resolve) => {{
+                try {{
+                    initCompositeCanvas();
+                    canvasRecordedChunks = [];
+                    isRecording = true;
+
+                    const stream = compositeCanvas.captureStream(30);
+                    canvasRecorder = new MediaRecorder(stream, {{
+                        mimeType: 'video/webm;codecs=vp9',
+                        videoBitsPerSecond: 5000000
+                    }});
+
+                    canvasRecorder.ondataavailable = (e) => {{
+                        if (e.data.size > 0) canvasRecordedChunks.push(e.data);
+                    }};
+
+                    canvasRecorder.onstop = () => {{
+                        const blob = new Blob(canvasRecordedChunks, {{ type: 'video/webm' }});
+                        downloadBlob(blob, `overlay_{sample}_${{modelFile}}.webm`);
+                        isRecording = false;
+                        resolve();
+                    }};
+
+                    canvasRecorder.start(100);
+
+                    // Render loop
+                    function renderLoop() {{
+                        if (!isRecording) return;
+                        renderCompositeFrame();
+                        animationFrameId = requestAnimationFrame(renderLoop);
+                    }}
+                    renderLoop();
+
+                    // Play video
+                    video.currentTime = 0;
+                    await video.play();
+
+                    // Wait for video to end
+                    video.onended = () => {{
+                        isRecording = false;
+                        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+                        if (canvasRecorder.state !== 'inactive') canvasRecorder.stop();
+                    }};
+
+                }} catch (e) {{
+                    console.error('Recording failed:', e);
+                    isRecording = false;
+                    resolve();
+                }}
+            }});
+        }}
+
+        // Cancel batch export
+        function cancelBatchExport() {{
+            batchExportCancelled = true;
+            isRecording = false;
+            video.pause();
+            if (canvasRecorder && canvasRecorder.state !== 'inactive') {{
+                canvasRecorder.stop();
+            }}
+            document.getElementById('batch-cancel-btn').disabled = true;
+        }}
+
+        // Update batch progress UI
+        function updateBatchProgress(current, total, message) {{
+            const percent = total > 0 ? (current / total) * 100 : 0;
+            document.getElementById('batch-progress-bar').style.width = `${{percent}}%`;
+            document.getElementById('batch-progress-text').textContent = `${{current}}/${{total}} - ${{message}}`;
+            document.getElementById('export-status').textContent = message;
         }}
 
         // Event listeners
@@ -1818,8 +2260,8 @@ def render_component(component: dict, depth: int = 0) -> str:
         return f'<span class="a2ui-icon {size_class}">{icon}</span>'
 
     elif comp_type == "Button":
-        # Support both "label" and "content" for button text
-        label = props.get("label", "") or props.get("content", "Button")
+        # Support "label", "text", and "content" for button text
+        label = props.get("label", "") or props.get("text", "") or props.get("content", "") or "Button"
         variant = props.get("variant", "primary")
         variant_class = VARIANT_CLASSES["Button"].get(variant, "a2ui-btn-primary")
         label_escaped = escape_html(label)
@@ -1829,8 +2271,8 @@ def render_component(component: dict, depth: int = 0) -> str:
         return '<div class="a2ui-divider"></div>'
 
     elif comp_type == "Badge":
-        # Support both "text" and "content" for badge text
-        text = props.get("text", "") or props.get("content", "")
+        # Support "text", "content", and "label" for badge text
+        text = props.get("text", "") or props.get("content", "") or props.get("label", "")
         variant = props.get("variant", "info")
         variant_class = VARIANT_CLASSES["Badge"].get(variant, "a2ui-badge-info")
         text_escaped = escape_html(text)
@@ -1966,6 +2408,21 @@ class PreviewHandler(http.server.SimpleHTTPRequestHandler):
                 self.serve_rawdata(sample)
             else:
                 self.send_error(400, "Missing sample parameter")
+        elif path == "/api/models":
+            # API endpoint for available model JSON files
+            sample = query.get("sample", [None])[0]
+            if sample:
+                self.serve_available_models(sample)
+            else:
+                self.send_error(400, "Missing sample parameter")
+        elif path == "/api/ui":
+            # API endpoint for UI JSON data
+            sample = query.get("sample", [None])[0]
+            file_name = query.get("file", [None])[0]
+            if sample and file_name:
+                self.serve_ui_json(sample, file_name)
+            else:
+                self.send_error(400, "Missing sample or file parameter")
         elif path.startswith("/video/"):
             # Serve video files from example directory
             self.serve_video_file(path[7:])  # Remove "/video/" prefix
@@ -2300,7 +2757,7 @@ class PreviewHandler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(json_str.encode("utf-8"))
 
     def serve_video_file(self, video_path: str):
-        """Serve video files from example directory."""
+        """Serve video files from example directory with proper caching."""
         # video_path format: Task2.1/P1_YuePan/sample_027/video/clip.mp4
         full_path = self.example_path / video_path
 
@@ -2308,8 +2765,20 @@ class PreviewHandler(http.server.SimpleHTTPRequestHandler):
             self.send_error(404, f"Video not found: {video_path}")
             return
 
-        # Get file size for Content-Length
-        file_size = full_path.stat().st_size
+        # Get file stats for caching
+        stat = full_path.stat()
+        file_size = stat.st_size
+        mtime = stat.st_mtime
+
+        # Generate ETag based on file path, size and mtime
+        etag = f'"{hash((video_path, file_size, mtime)) & 0xffffffff:08x}"'
+
+        # Check If-None-Match for cache validation
+        if_none_match = self.headers.get('If-None-Match')
+        if if_none_match == etag:
+            self.send_response(304)  # Not Modified
+            self.end_headers()
+            return
 
         # Handle range requests for video seeking
         range_header = self.headers.get('Range')
@@ -2331,19 +2800,27 @@ class PreviewHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header("Content-Type", "video/mp4")
         self.send_header("Accept-Ranges", "bytes")
         self.send_header("Access-Control-Allow-Origin", "*")
+        # Cache headers - cache for 1 hour, revalidate with ETag
+        self.send_header("Cache-Control", "public, max-age=3600")
+        self.send_header("ETag", etag)
         self.end_headers()
 
         # Send file content
-        with open(full_path, 'rb') as f:
-            f.seek(start)
-            remaining = end - start + 1
-            chunk_size = 64 * 1024  # 64KB chunks
-            while remaining > 0:
-                chunk = f.read(min(chunk_size, remaining))
-                if not chunk:
-                    break
-                self.wfile.write(chunk)
-                remaining -= len(chunk)
+        try:
+            with open(full_path, 'rb') as f:
+                f.seek(start)
+                remaining = end - start + 1
+                chunk_size = 64 * 1024  # 64KB chunks
+                while remaining > 0:
+                    chunk = f.read(min(chunk_size, remaining))
+                    if not chunk:
+                        break
+                    self.wfile.write(chunk)
+                    remaining -= len(chunk)
+        except (BrokenPipeError, ConnectionResetError):
+            # Client disconnected (e.g., video seeking, tab closed)
+            # This is normal behavior for video streaming, not an error
+            pass
 
     def serve_gaze_data(self, sample: str):
         """Serve gaze data as JSON."""
@@ -2365,10 +2842,15 @@ class PreviewHandler(http.server.SimpleHTTPRequestHandler):
                     x_str = row.get('gaze x [px]', '').strip()
                     y_str = row.get('gaze y [px]', '').strip()
 
+                    fixation_str = row.get('fixation id', '').strip()
+                    worn_str = row.get('worn', '').strip()
+
                     gaze_data.append({
                         'time': time_s,
                         'x': float(x_str) if x_str else None,
                         'y': float(y_str) if y_str else None,
+                        'fixation_id': float(fixation_str) if fixation_str else None,
+                        'worn': worn_str.lower() == 'true' if worn_str else False,
                     })
                 except (ValueError, KeyError):
                     continue
@@ -2387,6 +2869,100 @@ class PreviewHandler(http.server.SimpleHTTPRequestHandler):
             data = json.load(f)
 
         self.send_json(data)
+
+    def serve_available_models(self, sample: str):
+        """Serve list of available model JSON files for a sample."""
+        sample_dir = self.output_path / sample
+
+        if not sample_dir.exists():
+            self.send_json({"error": "Sample directory not found", "models": []})
+            return
+
+        models = []
+        for json_file in sample_dir.glob("*.json"):
+            file_name = json_file.stem  # Without .json extension
+
+            # Parse model info from filename: {strategy}_{provider}_{model}.json
+            # Examples: v2_google_gui_azure_gpt-4o, v3_with_visual_gemini_gemini-3-flash
+            parts = file_name.split("_")
+
+            # Determine strategy prefix (v1_baseline, v2_google_gui, v3_with_visual)
+            if file_name.startswith("v1_baseline"):
+                strategy = "v1_baseline"
+                remaining = file_name[len("v1_baseline_"):] if len(file_name) > len("v1_baseline") else ""
+            elif file_name.startswith("v2_google_gui"):
+                strategy = "v2_google_gui"
+                remaining = file_name[len("v2_google_gui_"):] if len(file_name) > len("v2_google_gui") else ""
+            elif file_name.startswith("v3_with_visual"):
+                strategy = "v3_with_visual"
+                remaining = file_name[len("v3_with_visual_"):] if len(file_name) > len("v3_with_visual") else ""
+            else:
+                strategy = file_name
+                remaining = ""
+
+            # Parse provider and model from remaining part
+            if remaining:
+                # Format: provider_model-name (e.g., azure_gpt-4o, claude_claude-opus-4-5-thinking)
+                provider_model = remaining.split("_", 1)
+                provider = provider_model[0] if provider_model else "unknown"
+                model = provider_model[1] if len(provider_model) > 1 else provider
+            else:
+                provider = "default"
+                model = "default"
+
+            models.append({
+                "file": file_name,
+                "strategy": strategy,
+                "provider": provider,
+                "model": model,
+                "display_name": f"{provider}/{model}" if remaining else strategy
+            })
+
+        # Sort by strategy, then by provider/model
+        models.sort(key=lambda x: (x["strategy"], x["provider"], x["model"]))
+
+        self.send_json({"models": models})
+
+    def serve_ui_json(self, sample: str, file_name: str):
+        """Serve UI JSON data and rendered HTML for a specific model."""
+        ui_json_path = self.output_path / sample / f"{file_name}.json"
+
+        if not ui_json_path.exists():
+            self.send_json({"error": f"UI JSON not found: {file_name}.json"})
+            return
+
+        try:
+            with open(ui_json_path, 'r', encoding='utf-8') as f:
+                ui_data = json.load(f)
+        except json.JSONDecodeError as e:
+            self.send_json({"error": f"Invalid JSON: {e}"})
+            return
+
+        # Render UI component to HTML
+        if isinstance(ui_data, list):
+            components = ui_data[:1]
+        else:
+            components = [ui_data]
+
+        component_html = ""
+        for comp in components:
+            comp_type = comp.get("type", "")
+            if comp_type == "SmartGlassesSurface":
+                stream = comp.get("metadata", {}).get("a2ui_stream", [])
+                for msg in stream:
+                    if msg.get("type") == "updateComponents":
+                        for internal_comp in msg.get("components", []):
+                            component_html += render_component(internal_comp)
+            elif comp_type in ["Card", "Row", "Column", "Text", "Icon", "Button"]:
+                component_html += render_component(comp)
+            else:
+                component_html += render_legacy_component(comp)
+
+        self.send_json({
+            "html": component_html,
+            "json": ui_data,
+            "file": file_name
+        })
 
     def serve_video_overlay(self, sample: str, strategy: str):
         """Serve the video overlay preview page."""
@@ -2427,7 +3003,14 @@ class PreviewHandler(http.server.SimpleHTTPRequestHandler):
         # Build video URL
         video_url = f"/video/{sample}/video/clip.mp4"
 
-        html = VIDEO_OVERLAY_TEMPLATE.format(
+        # Load template from file
+        try:
+            template = load_template("video_overlay")
+        except FileNotFoundError:
+            # Fallback to inline template if file not found
+            template = VIDEO_OVERLAY_TEMPLATE
+
+        html = template.format(
             sample=sample,
             strategy=strategy,
             video_url=video_url,

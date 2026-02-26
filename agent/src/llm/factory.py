@@ -49,7 +49,7 @@ def parse_model_spec(spec: str) -> tuple[str, str]:
         model_name = spec
 
     # Validate provider
-    valid_providers = ["azure", "gemini", "claude"]
+    valid_providers = ["azure", "gemini", "claude", "vertex"]
     if provider not in valid_providers:
         raise ValueError(
             f"Unknown provider: {provider}. Valid providers: {valid_providers}"
@@ -104,6 +104,12 @@ def create_client(
     provider_config = LLMConfig.get_provider_config(provider)
 
     # Build ModelConfig
+    # For vertex, pass project_id and region via extra
+    extra = dict(kwargs)
+    if provider == "vertex":
+        extra.setdefault("project_id", provider_config.get("project_id"))
+        extra.setdefault("region", provider_config.get("region", "us-central1"))
+
     config = ModelConfig(
         provider=provider,
         model_name=model_name,
@@ -113,7 +119,7 @@ def create_client(
         proxy=provider_config.get("proxy"),
         max_retries=max_retries,
         retry_delay=retry_delay,
-        extra=kwargs,
+        extra=extra,
     )
 
     # Create provider-specific client
@@ -129,6 +135,10 @@ def create_client(
         from .claude import ClaudeClient
 
         return ClaudeClient(config)
+    elif provider == "vertex":
+        from .vertex import VertexGeminiClient
+
+        return VertexGeminiClient(config)
     else:
         raise ValueError(f"Unknown provider: {provider}")
 
@@ -142,9 +152,16 @@ def list_available_models() -> dict[str, list[str]]:
     return {
         "azure": ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo"],
         "gemini": [
+            "gemini-3-flash",       # alias → gemini-3-flash-preview (official)
+            "gemini-3-pro",         # alias → gemini-3-pro-preview (official)
             "gemini-2.5-flash",
             "gemini-2.5-pro",
-            "gemini-2.0-flash",
+        ],
+        "vertex": [
+            "gemini-2.0-flash",     # recommended: no thinking overhead, reliable
+            "gemini-2.0-flash-001",
+            "gemini-2.5-flash",     # thinking model, needs max_tokens >= 2048
+            "gemini-2.5-pro",       # highest quality, thinking model
         ],
         "claude": [
             "claude-sonnet-4-5",

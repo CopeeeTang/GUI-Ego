@@ -321,7 +321,41 @@ class VisualPromptStrategy(PromptStrategy):
             "time_range": [recommendation.start_time, recommendation.end_time],
         }
 
+        # Prepare for Preview compatibility (move visual_anchor to metadata)
+        result = self._prepare_for_preview(result)
+
         return result
+
+    def _prepare_for_preview(self, component: dict) -> dict:
+        """Prepare component for Preview compatibility.
+
+        Moves visual_anchor from top-level to metadata to ensure
+        the component renders correctly in Preview 0.8.
+
+        Args:
+            component: Component with potential visual_anchor field.
+
+        Returns:
+            Component with visual_anchor moved to metadata.
+        """
+        if "visual_anchor" in component:
+            component["metadata"] = component.get("metadata", {})
+            component["metadata"]["visual_anchor"] = component.pop("visual_anchor")
+            logger.debug(f"Moved visual_anchor to metadata for Preview compatibility")
+
+        # Ensure children field exists for container types
+        container_types = {"Card", "Row", "Column", "List"}
+        if component.get("type") in container_types and "children" not in component:
+            component["children"] = []
+
+        # Recursively process children
+        if "children" in component and isinstance(component["children"], list):
+            component["children"] = [
+                self._prepare_for_preview(child) if isinstance(child, dict) else child
+                for child in component["children"]
+            ]
+
+        return component
 
     def _build_prompt(
         self,

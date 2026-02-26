@@ -36,13 +36,18 @@ class LLMConfig:
             "api_key": ["ANTHROPIC_API_KEY", "CLAUDE_API_KEY"],
             "proxy": ["CLAUDE_PROXY", "HTTPS_PROXY"],
         },
+        "vertex": {
+            # No API key — uses Application Default Credentials (ADC)
+            "project_id": ["VERTEX_PROJECT", "GOOGLE_CLOUD_PROJECT"],
+            "region": ["VERTEX_REGION"],
+        },
     }
 
     # Default models per provider
     DEFAULT_MODELS = {
         "azure": "gpt-4o",
-        "gemini": "gemini-2.5-flash",
-        "claude": "claude-sonnet-4-5",
+        "gemini": "gemini-3-pro-high",
+        "claude": "cclaude-opus-4-5-thinking",
     }
 
     @classmethod
@@ -65,11 +70,27 @@ class LLMConfig:
 
     @classmethod
     def get_gemini_config(cls) -> dict:
-        """Get Gemini configuration."""
-        mapping = cls.ENV_MAPPINGS["gemini"]
+        """Get Gemini configuration.
+
+        Proxy is optional — when GEMINI_PROXY is not set, connects directly
+        to the official Google API using GOOGLE_API_KEY.
+
+        Key priority depends on proxy mode:
+          - With proxy:  GEMINI_API_KEY > GOOGLE_API_KEY (proxy may use own key format)
+          - Direct:      GOOGLE_API_KEY > GEMINI_API_KEY (official key required)
+        """
+        proxy = cls.get_env(["GEMINI_PROXY", "HTTPS_PROXY"])
+
+        if proxy:
+            # Proxy mode: prefer proxy-specific key
+            api_key = cls.get_env(["GEMINI_API_KEY", "GOOGLE_API_KEY"])
+        else:
+            # Direct mode: prefer official Google API key
+            api_key = cls.get_env(["GOOGLE_API_KEY", "GEMINI_API_KEY"])
+
         return {
-            "api_key": cls.get_env(mapping["api_key"]),
-            "proxy": cls.get_env(mapping["proxy"], cls.DEFAULT_PROXY),
+            "api_key": api_key,
+            "proxy": proxy,  # None = direct official API
         }
 
     @classmethod
@@ -82,11 +103,20 @@ class LLMConfig:
         }
 
     @classmethod
+    def get_vertex_config(cls) -> dict:
+        """Get Vertex AI configuration (uses ADC, no API key needed)."""
+        mapping = cls.ENV_MAPPINGS["vertex"]
+        return {
+            "project_id": cls.get_env(mapping["project_id"]),
+            "region": cls.get_env(mapping["region"], "global"),
+        }
+
+    @classmethod
     def get_provider_config(cls, provider: str) -> dict:
         """Get configuration for a specific provider.
 
         Args:
-            provider: Provider name (azure, gemini, claude).
+            provider: Provider name (azure, gemini, claude, vertex).
 
         Returns:
             Configuration dictionary for the provider.
@@ -101,6 +131,8 @@ class LLMConfig:
             return cls.get_gemini_config()
         elif provider == "claude":
             return cls.get_claude_config()
+        elif provider == "vertex":
+            return cls.get_vertex_config()
         else:
             raise ValueError(f"Unknown provider: {provider}")
 
@@ -127,6 +159,10 @@ class LLMConfig:
         elif provider == "claude":
             if not config.get("api_key"):
                 return False, "ANTHROPIC_API_KEY not set"
+        elif provider == "vertex":
+            # Vertex AI uses ADC — no API key validation needed
+            # project_id can come from ADC itself if not set explicitly
+            pass
 
         return True, ""
 

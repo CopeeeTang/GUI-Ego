@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Overlay Preview - {sample}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+        body {{ font-family: 'Rajdhani', sans-serif; background: #0a0a0a; min-height: 100vh; color: #00ff41; display: flex; flex-direction: column; }}
+        .header {{ padding: 15px 20px; background: rgba(0, 0, 0, 0.8); border-bottom: 1px solid rgba(0, 255, 65, 0.3); display: flex; justify-content: space-between; align-items: center; }}
+        .header h1 {{ font-size: 18px; font-weight: 600; color: #00ff41; }}
+        .header .meta {{ font-size: 12px; color: rgba(255, 255, 255, 0.6); }}
+        .controls {{ display: flex; gap: 10px; }}
+        .controls button {{ padding: 8px 16px; border: 1px solid #00ff41; background: rgba(0, 255, 65, 0.1); color: #00ff41; border-radius: 4px; cursor: pointer; font-family: 'Rajdhani', sans-serif; font-weight: 600; text-transform: uppercase; font-size: 12px; transition: all 0.2s; }}
+        .controls button:hover {{ background: rgba(0, 255, 65, 0.3); }}
+        .controls button.active {{ background: #00ff41; color: #000; }}
+        .main-container {{ flex: 1; display: flex; flex-direction: column; padding: 20px; gap: 20px; }}
+        .video-container {{ position: relative; width: 100%; max-width: 1280px; margin: 0 auto; background: #000; border-radius: 8px; overflow: hidden; box-shadow: 0 0 30px rgba(0, 255, 65, 0.2); }}
+        .video-container video {{ width: 100%; display: block; }}
+        .ui-overlay {{ position: absolute; pointer-events: none; transition: all 0.3s ease; transform: translate(-50%, -50%); max-width: 400px; z-index: 10; }}
+        .ui-overlay.hidden {{ opacity: 0; }}
+        .gaze-indicator {{ position: absolute; width: 20px; height: 20px; border: 2px solid #ff0000; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 5; opacity: 0.8; }}
+        .gaze-indicator::after {{ content: ''; position: absolute; top: 50%; left: 50%; width: 4px; height: 4px; background: #ff0000; border-radius: 50%; transform: translate(-50%, -50%); }}
+        .timeline {{ background: rgba(0, 0, 0, 0.8); padding: 15px 20px; border-radius: 8px; border: 1px solid rgba(0, 255, 65, 0.3); }}
+        .timeline-header {{ display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 12px; }}
+        .timeline-bar {{ position: relative; height: 8px; background: rgba(255, 255, 255, 0.1); border-radius: 4px; cursor: pointer; }}
+        .timeline-progress {{ position: absolute; height: 100%; background: linear-gradient(90deg, #00ff41, #00d4ff); border-radius: 4px; width: 0%; }}
+        .timeline-ui-window {{ position: absolute; height: 100%; background: rgba(0, 255, 65, 0.3); border: 1px solid #00ff41; border-radius: 4px; }}
+        .settings-panel {{ background: rgba(0, 0, 0, 0.8); padding: 15px 20px; border-radius: 8px; border: 1px solid rgba(0, 255, 65, 0.3); display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }}
+        .setting-group {{ display: flex; flex-direction: column; gap: 5px; }}
+        .setting-group label {{ font-size: 11px; text-transform: uppercase; color: rgba(255, 255, 255, 0.6); }}
+        .setting-group input, .setting-group select {{ padding: 8px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(0, 255, 65, 0.3); border-radius: 4px; color: #fff; font-family: 'Rajdhani', sans-serif; }}
+        .a2ui-card {{ padding: 16px !important; color: #ffffff !important; }}
+        .a2ui-card-glass {{ background: rgba(0, 0, 0, 0.7) !important; backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important; border: 1px solid rgba(34, 197, 94, 0.4) !important; border-radius: 12px !important; box-shadow: 0 0 20px rgba(0, 255, 65, 0.2) !important; }}
+        .a2ui-row {{ display: flex; align-items: center; gap: 12px; }}
+        .a2ui-column {{ display: flex; flex-direction: column; gap: 8px; }}
+        .a2ui-text {{ line-height: 1.4 !important; color: #00ff41 !important; font-family: 'Rajdhani', monospace !important; }}
+        .a2ui-text-hero {{ font-size: 32px !important; font-weight: 700 !important; color: #ffffff !important; }}
+        .a2ui-text-h1 {{ font-size: 24px !important; font-weight: 600 !important; color: #ffffff !important; }}
+        .a2ui-text-h2 {{ font-size: 20px !important; font-weight: 600 !important; color: #ffffff !important; }}
+        .a2ui-text-body {{ font-size: 16px !important; font-weight: 400 !important; }}
+        .a2ui-text-caption {{ font-size: 12px !important; color: rgba(255, 255, 255, 0.7) !important; }}
+        .a2ui-text-label {{ font-size: 11px !important; text-transform: uppercase !important; color: rgba(255, 255, 255, 0.6) !important; }}
+        .a2ui-icon {{ display: flex !important; align-items: center !important; justify-content: center !important; }}
+        .a2ui-icon-sm {{ width: 16px !important; height: 16px !important; font-size: 14px !important; }}
+        .a2ui-icon-md {{ width: 24px !important; height: 24px !important; font-size: 20px !important; }}
+        .a2ui-icon-lg {{ width: 32px !important; height: 32px !important; font-size: 28px !important; }}
+        .a2ui-button {{ padding: 10px 20px !important; border: none !important; font-size: 14px !important; cursor: pointer !important; }}
+        .a2ui-btn-primary {{ background: #00ff41 !important; color: #000 !important; border-radius: 4px !important; font-weight: bold !important; }}
+        .a2ui-badge {{ padding: 4px 10px !important; border-radius: 12px !important; font-size: 12px !important; }}
+        .a2ui-badge-info {{ background: rgba(59, 130, 246, 0.2) !important; color: #60a5fa !important; }}
+        .a2ui-badge-success {{ background: rgba(34, 197, 94, 0.2) !important; color: #4ade80 !important; }}
+        .a2ui-divider {{ height: 1px; background: rgba(255,255,255,0.2); margin: 8px 0; }}
+        .export-panel {{ background: rgba(0, 0, 0, 0.9); padding: 20px; border-radius: 8px; border: 1px solid #00ff41; margin-top: 10px; }}
+        .export-panel h3 {{ margin-bottom: 15px; color: #00ff41; }}
+        .export-status {{ padding: 10px; background: rgba(0, 255, 65, 0.1); border-radius: 4px; font-size: 14px; margin-top: 10px; }}
+        .json-view {{ background: #1e1e1e; border-radius: 8px; padding: 15px; max-height: 200px; overflow: auto; font-size: 12px; display: none; }}
+        .json-view.visible {{ display: block; }}
+        .json-view pre {{ font-family: 'Monaco', 'Menlo', monospace; color: #d4d4d4; white-space: pre-wrap; }}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>🎬 Video Overlay Preview</h1>
+            <span class="meta">{sample} | Model: {strategy}</span>
+        </div>
+        <div class="controls">
+            <button onclick="location.href='/'">📁 Back</button>
+            <button id="btn-gaze" class="active" onclick="toggleGaze()">👁 Gaze</button>
+            <button id="btn-json" onclick="toggleJson()">📋 JSON</button>
+            <button id="btn-export" onclick="toggleExport()">📹 Export</button>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="video-container" id="video-container">
+            <video id="video" src="{video_url}" preload="metadata" controls></video>
+            <canvas id="gaze-trail-canvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 4;"></canvas>
+            <div class="gaze-indicator" id="gaze-indicator" style="display: none;"></div>
+            <div class="ui-overlay hidden" id="ui-overlay">
+                {component_html}
+            </div>
+        </div>
+
+        <div class="timeline">
+            <div class="timeline-header">
+                <span id="current-time">00:00.000</span>
+                <span>UI Window: <span id="ui-window-info">Last 2.0s</span></span>
+                <span id="total-time">00:00.000</span>
+            </div>
+            <div class="timeline-bar" id="timeline-bar" onclick="seekVideo(event)">
+                <div class="timeline-progress" id="timeline-progress"></div>
+                <div class="timeline-ui-window" id="timeline-ui-window"></div>
+            </div>
+        </div>
+
+        <div class="settings-panel">
+            <div class="setting-group">
+                <label>Model Selection</label>
+                <select id="model-selector" onchange="switchModel()">
+                    <option value="{strategy}">{strategy} (loading...)</option>
+                </select>
+            </div>
+            <div class="setting-group">
+                <label>UI Display Duration (seconds)</label>
+                <input type="number" id="ui-duration" value="2.0" min="0.5" max="10" step="0.5" onchange="updateUIWindow()">
+            </div>
+            <div class="setting-group">
+                <label>UI Position Mode</label>
+                <select id="position-mode" onchange="updatePositionMode()">
+                    <option value="gaze">Follow Gaze</option>
+                    <option value="center">Center</option>
+                    <option value="fixed">Fixed Position</option>
+                </select>
+            </div>
+            <div class="setting-group">
+                <label>Gaze Fallback</label>
+                <select id="gaze-fallback">
+                    <option value="last_valid">Last Valid</option>
+                    <option value="center">Center</option>
+                    <option value="interpolate">Interpolate</option>
+                </select>
+            </div>
+            <div class="setting-group">
+                <label>Playback</label>
+                <button onclick="playPause()" style="width: 100%;">▶ Play / ⏸ Pause</button>
+            </div>
+        </div>
+
+        <div class="export-panel" id="export-panel" style="display: none;">
+            <h3>📹 Export Video with Overlay</h3>
+            <p style="color: rgba(255,255,255,0.7); margin-bottom: 15px;">
+                Export videos with UI overlay using Canvas rendering (no screen capture needed).
+            </p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div style="border: 1px solid rgba(0,255,65,0.3); padding: 15px; border-radius: 8px;">
+                    <h4 style="color: #00ff41; margin-bottom: 10px;">Single Model Export</h4>
+                    <div class="controls" style="flex-direction: column; align-items: stretch;">
+                        <button onclick="startCanvasRecording()">🎬 Record Current Model</button>
+                        <button onclick="stopCanvasRecording()" id="canvas-stop-btn" disabled>⏹ Stop & Save</button>
+                        <button onclick="captureCanvasScreenshot()">📷 Screenshot</button>
+                    </div>
+                </div>
+                <div style="border: 1px solid rgba(255,165,0,0.3); padding: 15px; border-radius: 8px;">
+                    <h4 style="color: #ffa500; margin-bottom: 10px;">🚀 Batch Export All Models</h4>
+                    <div class="controls" style="flex-direction: column; align-items: stretch;">
+                        <div style="margin-bottom: 10px;">
+                            <label style="font-size: 12px; color: rgba(255,255,255,0.6);">Select models to export:</label>
+                            <div id="batch-model-list" style="max-height: 120px; overflow-y: auto; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; margin-top: 5px;">
+                                Loading models...
+                            </div>
+                        </div>
+                        <button onclick="startBatchExport()" id="batch-start-btn">📦 Export Selected Models</button>
+                        <button onclick="cancelBatchExport()" id="batch-cancel-btn" disabled>❌ Cancel</button>
+                    </div>
+                </div>
+            </div>
+            <div class="export-status" id="export-status">Ready to export</div>
+            <div id="batch-progress" style="display: none; margin-top: 10px;">
+                <div style="background: rgba(255,255,255,0.1); height: 8px; border-radius: 4px; overflow: hidden;">
+                    <div id="batch-progress-bar" style="background: linear-gradient(90deg, #00ff41, #00d4ff); height: 100%; width: 0%; transition: width 0.3s;"></div>
+                </div>
+                <div id="batch-progress-text" style="font-size: 12px; margin-top: 5px; color: rgba(255,255,255,0.7);"></div>
+            </div>
+        </div>
+
+        <div class="json-view" id="json-view">
+            <pre>{json_content}</pre>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const CONFIG = {{
+            sample: '{sample}',
+            strategy: '{strategy}'
+        }};
+
+        // State
+        let gazeData = [];
+        let rawData = null;
+        let showGaze = true;
+        let currentModel = CONFIG.strategy;
+        let availableModels = [];
+        let gazeTrail = [];  // Recent gaze screen positions for trail rendering
+        const TRAIL_DURATION = 0.5;  // seconds of trail to show
+        const TRAIL_MAX_POINTS = 100;
+
+        // Recording state
+        let canvasRecorder = null;
+        let canvasRecordedChunks = [];
+        let compositeCanvas = null;
+        let compositeCtx = null;
+        let isRecording = false;
+        let animationFrameId = null;
+        let batchExportCancelled = false;
+        let uiAnchorPos = null;  // Locked UI position (x, y) in video pixels during UI display
+
+        // DOM elements
+        const video = document.getElementById('video');
+        const uiOverlay = document.getElementById('ui-overlay');
+        const gazeIndicator = document.getElementById('gaze-indicator');
+        const timelineProgress = document.getElementById('timeline-progress');
+        const timelineUIWindow = document.getElementById('timeline-ui-window');
+
+        // Load all data on startup
+        async function loadData() {{
+            console.log('Loading data for sample:', CONFIG.sample);
+
+            // Load gaze data
+            try {{
+                const gazeResp = await fetch(`/api/gaze?sample=${{CONFIG.sample}}`);
+                const gazeJson = await gazeResp.json();
+                gazeData = gazeJson.data || [];
+                uiTriggerComputed = false;
+                uiTriggerFixation = null;
+                uiAnchorPos = null;
+                console.log(`Loaded ${{gazeData.length}} gaze points`);
+            }} catch (e) {{
+                console.warn('Failed to load gaze data:', e);
+            }}
+
+            // Load rawdata
+            try {{
+                const rawResp = await fetch(`/api/rawdata?sample=${{CONFIG.sample}}`);
+                rawData = await rawResp.json();
+                uiTriggerComputed = false;
+                console.log('Loaded rawdata');
+            }} catch (e) {{
+                console.warn('Failed to load rawdata:', e);
+            }}
+
+            // Load available models - CRITICAL for model selector
+            try {{
+                const modelsResp = await fetch(`/api/models?sample=${{CONFIG.sample}}`);
+                const modelsJson = await modelsResp.json();
+                availableModels = modelsJson.models || [];
+                console.log('Available models:', availableModels);
+                populateModelSelector();
+            }} catch (e) {{
+                console.error('Failed to load available models:', e);
+            }}
+        }}
+
+        // Populate model selector dropdown
+        function populateModelSelector() {{
+            const selector = document.getElementById('model-selector');
+            selector.innerHTML = '';
+
+            if (availableModels.length === 0) {{
+                selector.innerHTML = `<option value="${{CONFIG.strategy}}">${{CONFIG.strategy}} (no models found)</option>`;
+                return;
+            }}
+
+            // Group models by strategy
+            const grouped = {{}};
+            availableModels.forEach(m => {{
+                if (!grouped[m.strategy]) grouped[m.strategy] = [];
+                grouped[m.strategy].push(m);
+            }});
+
+            // Create optgroups for each strategy
+            Object.keys(grouped).sort().forEach(strategy => {{
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = strategy;
+
+                grouped[strategy].forEach(m => {{
+                    const option = document.createElement('option');
+                    option.value = m.file;
+                    option.textContent = m.display_name;
+                    if (m.file === currentModel) {{
+                        option.selected = true;
+                    }}
+                    optgroup.appendChild(option);
+                }});
+
+                selector.appendChild(optgroup);
+            }});
+
+            console.log('Model selector populated with', availableModels.length, 'models');
+        }}
+
+        // Switch to a different model — full page reload for clean state reset
+        function switchModel() {{
+            const selector = document.getElementById('model-selector');
+            const newModel = selector.value;
+            if (newModel === currentModel) return;
+
+            // Reload page with new model file parameter
+            const url = new URL(window.location.href);
+            url.searchParams.set('file', newModel);
+            window.location.href = url.toString();
+        }}
+
+        // Format time as MM:SS.mmm
+        function formatTime(seconds) {{
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${{mins.toString().padStart(2, '0')}}:${{secs.toFixed(3).padStart(6, '0')}}`;
+        }}
+
+        // Update UI based on current video time
+        function updateUI() {{
+            const currentTime = video.currentTime;
+            const duration = video.duration || 1;
+            const uiDuration = parseFloat(document.getElementById('ui-duration').value);
+
+            const progress = (currentTime / duration) * 100;
+            timelineProgress.style.width = `${{progress}}%`;
+            document.getElementById('current-time').textContent = formatTime(currentTime);
+            document.getElementById('total-time').textContent = formatTime(duration);
+
+            // Compute fixation trigger (once, after data is loaded)
+            computeUITrigger();
+
+            // Determine UI visibility window
+            let uiStartTime, uiEndTime;
+
+            if (uiTriggerFixation && gazeData.length > 0) {{
+                // Fixation-based: convert gaze absolute time to video-relative time
+                const gazeTimeBase = gazeData[0].time;
+                const fixationVideoTime = uiTriggerFixation.startTime - gazeTimeBase;
+
+                // Always use fixation center as UI anchor position
+                uiAnchorPos = {{
+                    x: uiTriggerFixation.centerX,
+                    y: uiTriggerFixation.centerY
+                }};
+
+                if (fixationVideoTime >= 0 && fixationVideoTime < duration) {{
+                    // Fixation is within video range — trigger at fixation time
+                    uiStartTime = fixationVideoTime;
+                    uiEndTime = uiStartTime + uiDuration;
+                    document.getElementById('ui-window-info').textContent =
+                        `Fixation @${{uiStartTime.toFixed(1)}}s (+${{uiDuration.toFixed(1)}}s)`;
+                }} else {{
+                    // Fixation is outside video range — use last N seconds but keep fixation position
+                    uiStartTime = duration - uiDuration;
+                    uiEndTime = duration;
+                    document.getElementById('ui-window-info').textContent =
+                        `Last ${{uiDuration.toFixed(1)}}s (anchored to fixation)`;
+                }}
+            }} else {{
+                // No fixation data: last N seconds, no anchor
+                uiStartTime = duration - uiDuration;
+                uiEndTime = duration;
+                uiAnchorPos = null;
+                document.getElementById('ui-window-info').textContent = `Last ${{uiDuration.toFixed(1)}}s`;
+            }}
+
+            // Update timeline window indicator
+            const windowStart = Math.max(0, (uiStartTime / duration) * 100);
+            const windowWidth = Math.min(100 - windowStart, (uiDuration / duration) * 100);
+            timelineUIWindow.style.left = `${{windowStart}}%`;
+            timelineUIWindow.style.width = `${{windowWidth}}%`;
+
+            // Show/hide UI
+            if (currentTime >= uiStartTime && currentTime <= uiEndTime) {{
+                uiOverlay.classList.remove('hidden');
+            }} else {{
+                uiOverlay.classList.add('hidden');
+            }}
+
+            updateGazePosition(currentTime);
+        }}
+
+        // Find gaze position at given time
+        function getGazeAt(time) {{
+            if (gazeData.length === 0) return null;
+
+            // Binary search for closest point
+            let low = 0, high = gazeData.length - 1;
+            while (low < high) {{
+                const mid = Math.floor((low + high) / 2);
+                if (gazeData[mid].time < time) {{
+                    low = mid + 1;
+                }} else {{
+                    high = mid;
+                }}
+            }}
+
+            // Choose the closer of adjacent points (fix: was missing this)
+            if (low > 0 && Math.abs(gazeData[low].time - time) > Math.abs(gazeData[low - 1].time - time)) {{
+                low = low - 1;
+            }}
+
+            const point = gazeData[low];
+            if (point && point.x !== null && point.y !== null) {{
+                return {{ x: point.x, y: point.y, fixation_id: point.fixation_id }};
+            }}
+
+            // Fallback strategies
+            const fallback = document.getElementById('gaze-fallback').value;
+
+            if (fallback === 'last_valid') {{
+                for (let i = low - 1; i >= 0; i--) {{
+                    if (gazeData[i].x !== null && gazeData[i].y !== null) {{
+                        return {{ x: gazeData[i].x, y: gazeData[i].y, fixation_id: gazeData[i].fixation_id }};
+                    }}
+                }}
+            }} else if (fallback === 'interpolate') {{
+                // Find nearest valid points before and after
+                let beforeIdx = -1, afterIdx = -1;
+                for (let i = low - 1; i >= 0; i--) {{
+                    if (gazeData[i].x !== null && gazeData[i].y !== null) {{ beforeIdx = i; break; }}
+                }}
+                for (let i = low; i < gazeData.length; i++) {{
+                    if (gazeData[i].x !== null && gazeData[i].y !== null) {{ afterIdx = i; break; }}
+                }}
+                if (beforeIdx >= 0 && afterIdx >= 0) {{
+                    const tBefore = gazeData[beforeIdx].time;
+                    const tAfter = gazeData[afterIdx].time;
+                    const tRange = tAfter - tBefore;
+                    if (tRange > 0) {{
+                        const alpha = (time - tBefore) / tRange;
+                        return {{
+                            x: (1 - alpha) * gazeData[beforeIdx].x + alpha * gazeData[afterIdx].x,
+                            y: (1 - alpha) * gazeData[beforeIdx].y + alpha * gazeData[afterIdx].y,
+                            fixation_id: null
+                        }};
+                    }}
+                }}
+                // Fall through to last_valid if interpolation fails
+                for (let i = low - 1; i >= 0; i--) {{
+                    if (gazeData[i].x !== null && gazeData[i].y !== null) {{
+                        return {{ x: gazeData[i].x, y: gazeData[i].y, fixation_id: gazeData[i].fixation_id }};
+                    }}
+                }}
+            }}
+
+            // Ultimate fallback: video center
+            return {{ x: video.videoWidth / 2, y: video.videoHeight / 2, fixation_id: null }};
+        }}
+
+        // === Fixation-based UI trigger (StreamGaze-inspired) ===
+
+        // State for fixation-based UI trigger
+        let uiTriggerFixation = null;
+        let uiTriggerComputed = false;
+
+        // Find the first stable fixation after a given time
+        function findFirstFixationAfter(afterTime) {{
+            if (gazeData.length === 0) return null;
+
+            let currentFixId = null;
+            let fixPoints = [];
+
+            for (let i = 0; i < gazeData.length; i++) {{
+                const pt = gazeData[i];
+                if (pt.time < afterTime) continue;
+                if (pt.x === null || pt.y === null) continue;
+
+                if (pt.fixation_id !== null && pt.fixation_id !== undefined) {{
+                    if (pt.fixation_id !== currentFixId) {{
+                        // New fixation started — check if previous was valid
+                        if (fixPoints.length >= 3) {{
+                            return computeFixation(fixPoints);
+                        }}
+                        currentFixId = pt.fixation_id;
+                        fixPoints = [pt];
+                    }} else {{
+                        fixPoints.push(pt);
+                    }}
+                }}
+            }}
+
+            // Check last fixation
+            if (fixPoints.length >= 3) {{
+                return computeFixation(fixPoints);
+            }}
+            return null;
+        }}
+
+        function computeFixation(points) {{
+            const sumX = points.reduce((s, p) => s + p.x, 0);
+            const sumY = points.reduce((s, p) => s + p.y, 0);
+            return {{
+                startTime: points[0].time,
+                endTime: points[points.length - 1].time,
+                centerX: sumX / points.length,
+                centerY: sumY / points.length,
+                pointCount: points.length
+            }};
+        }}
+
+        // Clamp UI position to FOV safe region (StreamGaze perifoveal bound ~8°)
+        function clampToSafeRegion(x, y, videoW, videoH) {{
+            const FOV_ANGLE_DEG = 8;
+            const HFOV_DEG = 100; // Pupil Labs Neon horizontal FOV
+            const rFov = videoW * Math.tan(FOV_ANGLE_DEG * Math.PI / 180) / Math.tan((HFOV_DEG / 2) * Math.PI / 180);
+            const margin = rFov;
+            return {{
+                x: Math.max(margin, Math.min(videoW - margin, x)),
+                y: Math.max(margin, Math.min(videoH - margin, y))
+            }};
+        }}
+
+        // Compute UI trigger timing (called once after data loads)
+        function computeUITrigger() {{
+            if (uiTriggerComputed) return;
+            uiTriggerComputed = true;
+
+            let annotationEndTime = null;
+            if (rawData && rawData.time_interval) {{
+                annotationEndTime = rawData.time_interval.end || rawData.time_interval.start;
+            }}
+
+            if (annotationEndTime !== null && gazeData.some(g => g.fixation_id !== null && g.fixation_id !== undefined)) {{
+                uiTriggerFixation = findFirstFixationAfter(annotationEndTime);
+                if (uiTriggerFixation) {{
+                    console.log('UI trigger fixation found:', uiTriggerFixation);
+                }} else {{
+                    console.warn('No fixation found after annotation end time:', annotationEndTime);
+                }}
+            }}
+        }}
+
+        // Update gaze indicator and UI position
+        function updateGazePosition(currentTime) {{
+            const videoEl = document.getElementById('video');
+            const container = document.getElementById('video-container');
+            const containerRect = container.getBoundingClientRect();
+
+            // Convert video-relative time back to gaze absolute time for lookup
+            const gazeTimeBase = gazeData.length > 0 ? gazeData[0].time : 0;
+            const gaze = getGazeAt(currentTime + gazeTimeBase);
+            if (!gaze) return;
+
+            // Calculate actual video render area (handle letterboxing)
+            const videoAspect = videoEl.videoWidth / videoEl.videoHeight;
+            const containerAspect = containerRect.width / containerRect.height;
+            let renderWidth, renderHeight, offsetX, offsetY;
+
+            if (containerAspect > videoAspect) {{
+                // Container wider than video: letterbox on sides
+                renderHeight = containerRect.height;
+                renderWidth = renderHeight * videoAspect;
+                offsetX = (containerRect.width - renderWidth) / 2;
+                offsetY = 0;
+            }} else {{
+                // Container taller than video: letterbox on top/bottom
+                renderWidth = containerRect.width;
+                renderHeight = renderWidth / videoAspect;
+                offsetX = 0;
+                offsetY = (containerRect.height - renderHeight) / 2;
+            }}
+
+            const scaleX = renderWidth / videoEl.videoWidth;
+            const scaleY = renderHeight / videoEl.videoHeight;
+            const displayX = offsetX + gaze.x * scaleX;
+            const displayY = offsetY + gaze.y * scaleY;
+
+            // Gaze indicator + trail
+            if (showGaze) {{
+                gazeIndicator.style.display = 'block';
+                gazeIndicator.style.left = `${{displayX}}px`;
+                gazeIndicator.style.top = `${{displayY}}px`;
+
+                // Add point to trail
+                gazeTrail.push({{ x: displayX, y: displayY, time: currentTime }});
+                const cutoff = currentTime - TRAIL_DURATION;
+                while (gazeTrail.length > 0 && gazeTrail[0].time < cutoff) {{
+                    gazeTrail.shift();
+                }}
+                if (gazeTrail.length > TRAIL_MAX_POINTS) {{
+                    gazeTrail.splice(0, gazeTrail.length - TRAIL_MAX_POINTS);
+                }}
+                renderGazeTrail(containerRect.width, containerRect.height);
+            }} else {{
+                gazeIndicator.style.display = 'none';
+                gazeTrail.length = 0;
+                renderGazeTrail(containerRect.width, containerRect.height);
+            }}
+
+            // UI position: locked to anchor during display, otherwise follow gaze
+            const mode = document.getElementById('position-mode').value;
+            const uiVisible = !uiOverlay.classList.contains('hidden');
+
+            if (mode === 'gaze') {{
+                // During UI display: lock to anchor position; otherwise no-op
+                if (uiVisible && uiAnchorPos) {{
+                    const clamped = clampToSafeRegion(uiAnchorPos.x, uiAnchorPos.y, videoEl.videoWidth, videoEl.videoHeight);
+                    let posX = offsetX + clamped.x * scaleX;
+                    let posY = offsetY + clamped.y * scaleY;
+                    [posX, posY] = clampOverlayToContainer(posX, posY, containerRect, offsetX, offsetY, renderWidth, renderHeight);
+                    uiOverlay.style.left = `${{posX}}px`;
+                    uiOverlay.style.top = `${{posY}}px`;
+                }} else if (uiVisible) {{
+                    const clamped = clampToSafeRegion(gaze.x, gaze.y, videoEl.videoWidth, videoEl.videoHeight);
+                    let posX = offsetX + clamped.x * scaleX;
+                    let posY = offsetY + clamped.y * scaleY;
+                    [posX, posY] = clampOverlayToContainer(posX, posY, containerRect, offsetX, offsetY, renderWidth, renderHeight);
+                    uiOverlay.style.left = `${{posX}}px`;
+                    uiOverlay.style.top = `${{posY}}px`;
+                }}
+            }} else if (mode === 'center') {{
+                uiOverlay.style.left = `${{containerRect.width / 2}}px`;
+                uiOverlay.style.top = `${{containerRect.height / 2}}px`;
+            }} else {{
+                uiOverlay.style.left = `${{containerRect.width / 2}}px`;
+                uiOverlay.style.top = `${{containerRect.height * 0.7}}px`;
+            }}
+        }}
+
+        // Clamp overlay position so it doesn't overflow the video render area
+        // Since overlay uses transform: translate(-50%, -50%), its bounding box is:
+        //   [posX - w/2, posY - h/2] to [posX + w/2, posY + h/2]
+        function clampOverlayToContainer(posX, posY, containerRect, offsetX, offsetY, renderW, renderH) {{
+            const overlayRect = uiOverlay.getBoundingClientRect();
+            const halfW = overlayRect.width / 2;
+            const halfH = overlayRect.height / 2;
+
+            // Video render area boundaries within container
+            const minX = offsetX + halfW;
+            const maxX = offsetX + renderW - halfW;
+            const minY = offsetY + halfH;
+            const maxY = offsetY + renderH - halfH;
+
+            return [
+                Math.max(minX, Math.min(maxX, posX)),
+                Math.max(minY, Math.min(maxY, posY))
+            ];
+        }}
+
+        // Render smooth gaze trail on canvas
+        function renderGazeTrail(canvasW, canvasH) {{
+            const canvas = document.getElementById('gaze-trail-canvas');
+            if (!canvas) return;
+
+            // Match canvas pixel resolution to display size
+            const w = Math.round(canvasW);
+            const h = Math.round(canvasH);
+            if (canvas.width !== w || canvas.height !== h) {{
+                canvas.width = w;
+                canvas.height = h;
+            }}
+
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (gazeTrail.length < 2) return;
+
+            const oldest = gazeTrail[0].time;
+            const newest = gazeTrail[gazeTrail.length - 1].time;
+            const timeSpan = newest - oldest || 1;
+
+            // Draw smooth curve with fading opacity and increasing width
+            for (let i = 1; i < gazeTrail.length; i++) {{
+                const prev = gazeTrail[i - 1];
+                const curr = gazeTrail[i];
+                const alpha = (curr.time - oldest) / timeSpan;  // 0=oldest, 1=newest
+
+                ctx.beginPath();
+                ctx.moveTo(prev.x, prev.y);
+
+                // Quadratic curve for smoothness using midpoint
+                if (i < gazeTrail.length - 1) {{
+                    const next = gazeTrail[i + 1];
+                    const endX = (curr.x + next.x) / 2;
+                    const endY = (curr.y + next.y) / 2;
+                    ctx.quadraticCurveTo(curr.x, curr.y, endX, endY);
+                }} else {{
+                    ctx.lineTo(curr.x, curr.y);
+                }}
+
+                ctx.strokeStyle = `rgba(255, 50, 50, ${{0.1 + alpha * 0.6}})`;
+                ctx.lineWidth = 1 + alpha * 2.5;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.stroke();
+            }}
+        }}
+
+        function seekVideo(event) {{
+            const bar = document.getElementById('timeline-bar');
+            const rect = bar.getBoundingClientRect();
+            const ratio = (event.clientX - rect.left) / rect.width;
+            video.currentTime = ratio * video.duration;
+            gazeTrail.length = 0;  // Clear trail on seek to avoid jump lines
+        }}
+
+        function playPause() {{
+            if (video.paused) video.play();
+            else video.pause();
+        }}
+
+        function toggleGaze() {{
+            showGaze = !showGaze;
+            document.getElementById('btn-gaze').classList.toggle('active', showGaze);
+        }}
+
+        function toggleJson() {{
+            document.getElementById('json-view').classList.toggle('visible');
+            document.getElementById('btn-json').classList.toggle('active');
+        }}
+
+        function toggleExport() {{
+            const panel = document.getElementById('export-panel');
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+            document.getElementById('btn-export').classList.toggle('active');
+            if (panel.style.display === 'block') {{
+                populateBatchModelList();
+            }}
+        }}
+
+        function updateUIWindow() {{
+            const duration = parseFloat(document.getElementById('ui-duration').value);
+            document.getElementById('ui-window-info').textContent = `Last ${{duration.toFixed(1)}}s`;
+            updateUI();
+        }}
+
+        function updatePositionMode() {{ updateUI(); }}
+
+        // Canvas recording functions
+        function initCompositeCanvas() {{
+            if (!compositeCanvas) {{
+                compositeCanvas = document.createElement('canvas');
+                compositeCtx = compositeCanvas.getContext('2d');
+            }}
+            compositeCanvas.width = video.videoWidth || 1280;
+            compositeCanvas.height = video.videoHeight || 720;
+        }}
+
+        async function renderCompositeFrame() {{
+            if (!compositeCtx) return;
+            compositeCtx.drawImage(video, 0, 0, compositeCanvas.width, compositeCanvas.height);
+
+            const overlay = document.getElementById('ui-overlay');
+            if (overlay && !overlay.classList.contains('hidden') && typeof html2canvas !== 'undefined') {{
+                try {{
+                    const uiCanvas = await html2canvas(overlay, {{ backgroundColor: null, scale: 1, logging: false, useCORS: true }});
+                    let drawX, drawY;
+
+                    const mode = document.getElementById('position-mode').value;
+                    if (mode === 'gaze') {{
+                        // Use anchor position (locked), matching preview behavior
+                        if (uiAnchorPos) {{
+                            const clamped = clampToSafeRegion(uiAnchorPos.x, uiAnchorPos.y, compositeCanvas.width, compositeCanvas.height);
+                            drawX = clamped.x;
+                            drawY = clamped.y;
+                        }} else {{
+                            const currentTime = video.currentTime;
+                            const gaze = getGazeAt(currentTime + (gazeData.length > 0 ? gazeData[0].time : 0));
+                            if (gaze) {{
+                                const clamped = clampToSafeRegion(gaze.x, gaze.y, compositeCanvas.width, compositeCanvas.height);
+                                drawX = clamped.x;
+                                drawY = clamped.y;
+                            }} else {{
+                                drawX = compositeCanvas.width / 2;
+                                drawY = compositeCanvas.height / 2;
+                            }}
+                        }}
+                    }} else {{
+                        drawX = compositeCanvas.width / 2;
+                        drawY = mode === 'fixed' ? compositeCanvas.height * 0.7 : compositeCanvas.height / 2;
+                    }}
+
+                    compositeCtx.drawImage(uiCanvas, drawX - uiCanvas.width / 2, drawY - uiCanvas.height / 2);
+                }} catch (e) {{
+                    console.warn('html2canvas render failed:', e);
+                }}
+            }}
+        }}
+
+        async function startCanvasRecording() {{
+            try {{
+                initCompositeCanvas();
+                canvasRecordedChunks = [];
+                isRecording = true;
+
+                const stream = compositeCanvas.captureStream(30);
+                canvasRecorder = new MediaRecorder(stream, {{ mimeType: 'video/webm;codecs=vp9', videoBitsPerSecond: 5000000 }});
+
+                canvasRecorder.ondataavailable = (e) => {{ if (e.data.size > 0) canvasRecordedChunks.push(e.data); }};
+                canvasRecorder.onstop = () => {{
+                    const blob = new Blob(canvasRecordedChunks, {{ type: 'video/webm' }});
+                    downloadBlob(blob, `overlay_${{CONFIG.sample.replace(/\\//g, '_')}}_${{currentModel}}.webm`);
+                    document.getElementById('export-status').textContent = '✅ Recording saved!';
+                    isRecording = false;
+                }};
+
+                canvasRecorder.start(100);
+
+                function renderLoop() {{
+                    if (!isRecording) return;
+                    renderCompositeFrame();
+                    animationFrameId = requestAnimationFrame(renderLoop);
+                }}
+                renderLoop();
+
+                video.currentTime = 0;
+                await video.play();
+                video.onended = () => {{ if (isRecording) stopCanvasRecording(); }};
+
+                document.getElementById('canvas-stop-btn').disabled = false;
+                document.getElementById('export-status').textContent = '🔴 Recording...';
+            }} catch (e) {{
+                document.getElementById('export-status').textContent = `Error: ${{e.message}}`;
+                isRecording = false;
+            }}
+        }}
+
+        function stopCanvasRecording() {{
+            isRecording = false;
+            if (animationFrameId) {{ cancelAnimationFrame(animationFrameId); animationFrameId = null; }}
+            if (canvasRecorder && canvasRecorder.state !== 'inactive') canvasRecorder.stop();
+            video.pause();
+            document.getElementById('canvas-stop-btn').disabled = true;
+        }}
+
+        async function captureCanvasScreenshot() {{
+            initCompositeCanvas();
+            await renderCompositeFrame();
+            compositeCanvas.toBlob((blob) => {{
+                downloadBlob(blob, `screenshot_${{CONFIG.sample.replace(/\\//g, '_')}}_${{currentModel}}.png`);
+                document.getElementById('export-status').textContent = '✅ Screenshot saved!';
+            }});
+        }}
+
+        function downloadBlob(blob, filename) {{
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }}
+
+        // Batch export functions
+        function populateBatchModelList() {{
+            const container = document.getElementById('batch-model-list');
+            if (availableModels.length === 0) {{
+                container.innerHTML = '<span style="color: rgba(255,255,255,0.5);">No models available</span>';
+                return;
+            }}
+            container.innerHTML = availableModels.map(m => `
+                <label style="display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer;">
+                    <input type="checkbox" class="batch-model-checkbox" value="${{m.file}}" checked>
+                    <span style="color: #fff;">${{m.display_name}}</span>
+                    <span style="color: rgba(255,255,255,0.4); font-size: 11px;">(${{m.strategy}})</span>
+                </label>
+            `).join('');
+        }}
+
+        async function startBatchExport() {{
+            const checkboxes = document.querySelectorAll('.batch-model-checkbox:checked');
+            const selectedModels = Array.from(checkboxes).map(cb => cb.value);
+            if (selectedModels.length === 0) {{ alert('Please select at least one model.'); return; }}
+
+            batchExportCancelled = false;
+            document.getElementById('batch-start-btn').disabled = true;
+            document.getElementById('batch-cancel-btn').disabled = false;
+            document.getElementById('batch-progress').style.display = 'block';
+
+            let completed = 0;
+            for (const modelFile of selectedModels) {{
+                if (batchExportCancelled) break;
+                updateBatchProgress(completed, selectedModels.length, `Exporting ${{modelFile}}...`);
+                try {{
+                    const resp = await fetch(`/api/ui?sample=${{CONFIG.sample}}&file=${{modelFile}}`);
+                    const data = await resp.json();
+                    if (!data.error) {{
+                        document.getElementById('ui-overlay').innerHTML = data.html;
+                        currentModel = modelFile;
+                        await new Promise(r => setTimeout(r, 200));
+                        await recordModelVideo(modelFile);
+                        completed++;
+                    }}
+                }} catch (e) {{ console.error(`Failed to export ${{modelFile}}:`, e); }}
+            }}
+            updateBatchProgress(completed, selectedModels.length, `✅ Completed! Exported ${{completed}} videos.`);
+            document.getElementById('batch-start-btn').disabled = false;
+            document.getElementById('batch-cancel-btn').disabled = true;
+        }}
+
+        function recordModelVideo(modelFile) {{
+            return new Promise(async (resolve) => {{
+                try {{
+                    initCompositeCanvas();
+                    canvasRecordedChunks = [];
+                    isRecording = true;
+
+                    const stream = compositeCanvas.captureStream(30);
+                    canvasRecorder = new MediaRecorder(stream, {{ mimeType: 'video/webm;codecs=vp9', videoBitsPerSecond: 5000000 }});
+                    canvasRecorder.ondataavailable = (e) => {{ if (e.data.size > 0) canvasRecordedChunks.push(e.data); }};
+                    canvasRecorder.onstop = () => {{
+                        const blob = new Blob(canvasRecordedChunks, {{ type: 'video/webm' }});
+                        downloadBlob(blob, `overlay_${{CONFIG.sample.replace(/\\//g, '_')}}_${{modelFile}}.webm`);
+                        isRecording = false;
+                        resolve();
+                    }};
+
+                    canvasRecorder.start(100);
+                    function renderLoop() {{ if (!isRecording) return; renderCompositeFrame(); animationFrameId = requestAnimationFrame(renderLoop); }}
+                    renderLoop();
+
+                    video.currentTime = 0;
+                    await video.play();
+                    video.onended = () => {{
+                        isRecording = false;
+                        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+                        if (canvasRecorder.state !== 'inactive') canvasRecorder.stop();
+                    }};
+                }} catch (e) {{ console.error('Recording failed:', e); isRecording = false; resolve(); }}
+            }});
+        }}
+
+        function cancelBatchExport() {{
+            batchExportCancelled = true;
+            isRecording = false;
+            video.pause();
+            if (canvasRecorder && canvasRecorder.state !== 'inactive') canvasRecorder.stop();
+            document.getElementById('batch-cancel-btn').disabled = true;
+        }}
+
+        function updateBatchProgress(current, total, message) {{
+            const percent = total > 0 ? (current / total) * 100 : 0;
+            document.getElementById('batch-progress-bar').style.width = `${{percent}}%`;
+            document.getElementById('batch-progress-text').textContent = `${{current}}/${{total}} - ${{message}}`;
+            document.getElementById('export-status').textContent = message;
+        }}
+
+        // Event listeners
+        video.addEventListener('timeupdate', updateUI);
+        video.addEventListener('loadedmetadata', () => {{ updateUIWindow(); updateUI(); }});
+
+        // Initialize
+        loadData();
+    </script>
+</body>
+</html>

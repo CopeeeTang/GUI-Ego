@@ -6,6 +6,7 @@ Abstract base class for all LLM providers with unified interface.
 
 import json
 import logging
+import re
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
@@ -198,7 +199,7 @@ class LLMClientBase(ABC):
         pass
 
     def _parse_json_response(self, response: str) -> dict[str, Any]:
-        """Parse JSON from response, handling markdown code blocks."""
+        """Parse JSON from response, handling markdown code blocks and common issues."""
         text = response.strip()
 
         # Handle markdown code blocks
@@ -211,12 +212,93 @@ class LLMClientBase(ABC):
                 lines = lines[:-1]
             text = "\n".join(lines)
 
+        # Fix trailing commas (common LLM issue)
+        text = re.sub(r',\s*([}\]])', r'\1', text)
+
         try:
             return json.loads(text)
         except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse JSON response: {e}")
-            logger.error(f"Response content (first 500 chars): {text[:500]}")
-            raise ValueError(f"Invalid JSON from LLM: {str(e)}")
+            logger.warning(f"Initial JSON parse failed: {e}, attempting repair...")
+
+            # Attempt to repair truncated or malformed JSON
+            repaired = self._attempt_json_repair(text)
+            try:
+                return json.loads(repaired)
+            except json.JSONDecodeError as e2:
+                logger.error(f"Failed to parse JSON response after repair: {e2}")
+                logger.error(f"Response content (first 500 chars): {text[:500]}")
+                raise ValueError(f"Invalid JSON from LLM: {str(e2)}")
+
+    def _attempt_json_repair(self, json_text: str) -> str:
+        """Attempt to repair common JSON issues.
+
+        Handles:
+        - Trailing commas
+        - Missing closing brackets (truncated JSON)
+        - Extra text after JSON
+
+        Args:
+            json_text: Malformed JSON text.
+
+        Returns:
+            Repaired JSON text (best effort).
+        """
+        text = json_text.strip()
+
+        # Fix trailing commas (already done, but ensure)
+        text = re.sub(r',\s*([}\]])', r'\1', text)
+
+        # Count brackets to detect truncation
+        open_braces = text.count('{')
+        close_braces = text.count('}')
+        open_brackets = text.count('[')
+        close_brackets = text.count(']')
+
+        # Add missing closing brackets
+        missing_braces = open_braces - close_braces
+        missing_brackets = open_brackets - close_brackets
+
+        if missing_braces > 0 or missing_brackets > 0:
+            logger.warning(
+                f"Attempting to repair truncated JSON: "
+                f"missing {missing_braces} braces, {missing_brackets} brackets"
+            )
+
+            # Remove trailing incomplete content
+            # Find last complete value marker
+            last_complete = max(
+                text.rfind('}'),
+                text.rfind(']'),
+                text.rfind('"'),
+                text.rfind('true'),
+                text.rfind('false'),
+                text.rfind('null'),
+            )
+
+            # Check if we have trailing garbage after a complete-looking position
+            if last_complete > 0 and last_complete < len(text) - 1:
+                after = text[last_complete + 1:].strip()
+                # If there's content that's not valid JSON continuation, truncate
+                if after and after[0] not in ',}]:':
+                    # Find a safer truncation point
+                    safe_point = text.rfind(',', 0, last_complete)
+                    if safe_point > 0:
+                        text = text[:safe_point]
+
+            # Recount after potential truncation
+            open_braces = text.count('{')
+            close_braces = text.count('}')
+            open_brackets = text.count('[')
+            close_brackets = text.count(']')
+
+            missing_braces = open_braces - close_braces
+            missing_brackets = open_brackets - close_brackets
+
+            # Add missing closures
+            text += '}' * max(0, missing_braces)
+            text += ']' * max(0, missing_brackets)
+
+        return text
 
     def estimate_image_tokens(self, images: list[str], detail: str = "auto") -> int:
         """Estimate token usage for images.

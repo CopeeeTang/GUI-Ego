@@ -14,6 +14,117 @@ from .data_loader import Recommendation, SceneConfig
 
 # 组件 Props Schema
 COMPONENT_SCHEMAS = {
+    # ==================== A2UI 原子组件 ====================
+    "Card": {
+        "required": ["children"],
+        "properties": {
+            "variant": "string - 卡片变体 (default|glass|outlined)",
+            "children": "array - 子组件列表",
+            "padding": "string - 内边距 (sm|md|lg)",
+        },
+        "example": {
+            "variant": "default",
+            "padding": "md",
+            "children": [],
+        },
+    },
+    "Text": {
+        "required": ["content"],
+        "properties": {
+            "content": "string - 文本内容",
+            "variant": "string - 文本变体 (title|subtitle|body|caption)",
+        },
+        "example": {
+            "content": "导航到目的地",
+            "variant": "title",
+        },
+    },
+    "Button": {
+        "required": ["label"],
+        "properties": {
+            "label": "string - 按钮文字",
+            "variant": "string - 按钮变体 (primary|secondary|ghost)",
+            "icon": "string - 图标名称（可选）",
+            "action": "object - 操作定义 {type, payload}",
+        },
+        "example": {
+            "label": "开始导航",
+            "variant": "primary",
+            "icon": "navigation",
+            "action": {"type": "navigate", "payload": {"destination": "目的地"}},
+        },
+    },
+    "Icon": {
+        "required": ["name"],
+        "properties": {
+            "name": "string - 图标名称 (arrow-right|location|cart|star|navigation|...)",
+            "size": "string - 图标大小 (sm|md|lg)",
+        },
+        "example": {
+            "name": "navigation",
+            "size": "md",
+        },
+    },
+    "Badge": {
+        "required": ["text"],
+        "properties": {
+            "text": "string - 徽章文字",
+            "variant": "string - 徽章变体 (default|success|warning|error)",
+        },
+        "example": {
+            "text": "500m",
+            "variant": "default",
+        },
+    },
+    "Row": {
+        "required": ["children"],
+        "properties": {
+            "children": "array - 子组件列表",
+            "gap": "string - 间距 (sm|md|lg)",
+            "align": "string - 对齐方式 (start|center|end|between)",
+        },
+        "example": {
+            "gap": "md",
+            "align": "center",
+            "children": [],
+        },
+    },
+    "Column": {
+        "required": ["children"],
+        "properties": {
+            "children": "array - 子组件列表",
+            "gap": "string - 间距 (sm|md|lg)",
+        },
+        "example": {
+            "gap": "md",
+            "children": [],
+        },
+    },
+    "Image": {
+        "required": ["src"],
+        "properties": {
+            "src": "string - 图片 URL",
+            "alt": "string - 替代文本",
+            "aspectRatio": "string - 宽高比 (1:1|16:9|4:3)",
+        },
+        "example": {
+            "src": "https://example.com/image.jpg",
+            "alt": "示例图片",
+            "aspectRatio": "16:9",
+        },
+    },
+    "List": {
+        "required": ["items"],
+        "properties": {
+            "items": "array - 列表项",
+            "variant": "string - 列表变体 (default|compact)",
+        },
+        "example": {
+            "items": [{"label": "项目1"}, {"label": "项目2"}],
+            "variant": "default",
+        },
+    },
+    # ==================== Legacy 组件 ====================
     "map_card": {
         "required": ["title"],
         "properties": {
