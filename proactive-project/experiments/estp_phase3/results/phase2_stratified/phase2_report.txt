@@ -1,0 +1,340 @@
+================================================================================
+Phase II: Task-Type Stratified Deep Analysis
+Generated: 2026-02-18 06:54
+================================================================================
+
+Cases: 53
+Task types: 12
+Tau range: [0.0, 0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 2.5, 2.8, 3.0, 3.5, 4.0, 5.0]
+Cooldown: 12.0s (D setting)
+
+────────────────────────────────────────────────────────────────────────────────
+SECTION 1: EXECUTIVE SUMMARY
+────────────────────────────────────────────────────────────────────────────────
+
+  Config                      Avg F1   Total FP    ΔF1 vs BL               95% CI
+  ───────────────────────────────────────────────────────────────────────────
+  Baseline (τ=0, no cd)        0.141      1,466              —                     —
+  D@2.8 (global)               0.109        416        -0.032  [-0.071, +0.013]
+  Adaptive-D (per-type τ)      0.222        416         +0.081  [0.046, +0.121]
+
+  >>> GATE 2 (Adaptive-D vs Baseline): PASS <<<
+      Lower CI > 0. Adaptive-D significantly improves F1 at scale.
+
+────────────────────────────────────────────────────────────────────────────────
+SECTION 2: PER-TYPE OPTIMAL THRESHOLD
+────────────────────────────────────────────────────────────────────────────────
+
+  Task Type                                      n  Opt-τ  Best-F1  BL-F1   ΔF1    vs-D28
+  ────────────────────────────────────────────────────────────────────────────
+  Object Localization                            5   5.00    0.173    0.061  +0.112   +0.103
+  Ego Object State Change Recognition            5   0.50    0.199    0.097  +0.102   +0.111
+  Object Function                                5   0.50    0.231    0.164  +0.066   +0.144
+  Attribute Perception                           5   0.50    0.256    0.216  +0.040   +0.176
+  Information Function                           5   2.80    0.143    0.118  +0.025   +0.000
+  Text-Rich Understanding                        5   2.00    0.288    0.265  +0.023   +0.106
+  Object Recognition                             5   2.50    0.143    0.128  +0.015   +0.069
+  Ego Object Localization                        5   1.50    0.223    0.208  +0.014   +0.152
+  Action Recognition                             4   0.50    0.240    0.235  +0.005   +0.240
+  Object State Change Recognition                5   0.00    0.144    0.144  +0.000   +0.044
+  Action Reasoning                               1   0.00    0.500    0.500  +0.000   +0.500
+  Task Understanding                             3   0.00    0.434    0.434  +0.000   +0.000
+
+────────────────────────────────────────────────────────────────────────────────
+SECTION 3: ADAPTIVE POLICY AGGREGATE RESULTS
+────────────────────────────────────────────────────────────────────────────────
+
+  Avg Adaptive-D F1:  0.222  (std=0.212)
+  Avg Baseline F1:    0.141  (std=0.159)
+  Delta:              +0.081  95% CI=[0.046, +0.121]
+  FP: 1,466 → 416  (72% reduction)
+  Cases improved:  32/53
+  Cases degraded:  12/53
+
+  Per-type adaptive vs baseline (avg ΔF1):
+    Ego Object Localization                       +0.133
+    Text-Rich Understanding                       +0.122
+    Object Localization                           +0.113
+    Object Function                               +0.110
+    Ego Object State Change Recognition           +0.076
+    Action Recognition                            +0.066
+    Information Function                          +0.066
+    Task Understanding                            +0.066
+    Object State Change Recognition               +0.063
+    Attribute Perception                          +0.052
+    Object Recognition                            +0.030
+    Action Reasoning                              +0.000
+
+────────────────────────────────────────────────────────────────────────────────
+SECTION 4: GAP DISCRIMINABILITY PER TASK TYPE
+────────────────────────────────────────────────────────────────────────────────
+
+  A step is 'GT' if it falls in [gt_start-1s, gt_end+2s].
+  Separation = GT_mean_gap - non_GT_mean_gap. Higher = more discriminative.
+
+  Task Type                                     GT-mean  non-GT   Sep    n_GT  n_nonGT  Verdict
+  ───────────────────────────────────────────────────────────────────────────────
+  Information Function                            3.148    0.539  +2.608     16      244  DISCRIMINATIVE
+  Object Recognition                              2.642    0.089  +2.553     40      221  DISCRIMINATIVE
+  Object State Change Recognition                 1.460   -0.776  +2.236     12      248  DISCRIMINATIVE
+  Text-Rich Understanding                         2.381    0.507  +1.873     52      208  DISCRIMINATIVE
+  Attribute Perception                            4.417    2.625  +1.793     26      234  DISCRIMINATIVE
+  Object Function                                 1.475   -0.014  +1.488     40      220  DISCRIMINATIVE
+  Object Localization                             5.855    4.566  +1.289     11      249  DISCRIMINATIVE
+  Ego Object State Change Recognition            -0.351   -1.465  +1.114     12      248  DISCRIMINATIVE
+  Action Recognition                              1.141    0.309  +0.831     21      187  moderate
+  Ego Object Localization                         2.644    1.967  +0.677     13      220  moderate
+  Action Reasoning                               -1.280   -1.500  +0.220     17        1  LOW/HARMFUL
+  Task Understanding                              3.668    5.740  -2.072    164       17  LOW/HARMFUL
+
+────────────────────────────────────────────────────────────────────────────────
+SECTION 5: PRECISION-RECALL CURVES PER TASK TYPE
+────────────────────────────────────────────────────────────────────────────────
+
+  [Object Localization]  optimal τ=5.00,  best F1=0.173
+      τ   Precision    Recall       F1    Avg FP   Trigger%
+   0.00       0.035     0.333    0.061      17.0      34.2%
+   0.25       0.035     0.333    0.061      16.8      33.8%
+   0.50       0.035     0.333    0.061      16.8      33.8%
+   0.75       0.035     0.333    0.061      16.8      33.8%
+   1.00       0.035     0.333    0.062      16.6      33.5%
+   1.50       0.035     0.333    0.062      16.0      32.3%
+   2.00       0.037     0.333    0.065      15.2      30.7%
+   2.50       0.039     0.333    0.069      13.8      28.0%
+   2.80       0.040     0.333    0.071      12.6      25.6%
+   3.00       0.040     0.333    0.071      12.4      25.3%
+   3.50       0.049     0.333    0.084      11.6      23.7%
+   4.00       0.057     0.333    0.097      11.2      22.9%
+   5.00       0.124     0.333    0.173      10.4      21.4% ←OPT
+
+  [Ego Object State Change Recognition]  optimal τ=0.50,  best F1=0.199
+      τ   Precision    Recall       F1    Avg FP   Trigger%
+   0.00       0.053     0.600    0.097       8.6      17.7%
+   0.25       0.054     0.600    0.099       8.4      17.3%
+   0.50       0.254     0.667    0.199       8.0      16.9% ←OPT
+   0.75       0.059     0.600    0.106       7.2      15.0%
+   1.00       0.097     0.800    0.172       6.6      14.2%
+   1.50       0.082     0.600    0.142       5.6      11.9%
+   2.00       0.042     0.400    0.075       4.6       9.6%
+   2.50       0.050     0.400    0.088       3.8       8.1%
+   2.80       0.050     0.400    0.088       3.2       6.9%
+   3.00       0.050     0.400    0.088       3.2       6.9%
+   3.50       0.100     0.200    0.133       0.8       1.9%
+   4.00       0.000     0.000    0.000       0.2       0.4%
+   5.00       0.000     0.000    0.000       0.0       0.0%
+
+  [Object Function]  optimal τ=0.50,  best F1=0.231
+      τ   Precision    Recall       F1    Avg FP   Trigger%
+   0.00       0.106     0.420    0.164       9.6      22.7%
+   0.25       0.128     0.420    0.191       8.2      19.6%
+   0.50       0.161     0.460    0.231       7.4      17.7% ←OPT
+   0.75       0.078     0.260    0.114       6.4      15.0%
+   1.00       0.078     0.260    0.114       5.8      13.8%
+   1.50       0.078     0.260    0.114       5.6      13.5%
+   2.00       0.051     0.180    0.073       5.2      11.9%
+   2.50       0.061     0.180    0.082       4.6      10.8%
+   2.80       0.068     0.180    0.087       4.4      10.4%
+   3.00       0.068     0.180    0.087       4.4      10.4%
+   3.50       0.091     0.180    0.100       4.0       9.6%
+   4.00       0.113     0.140    0.079       3.2       7.3%
+   5.00       0.200     0.040    0.067       2.0       4.2%
+
+  [Attribute Perception]  optimal τ=0.50,  best F1=0.256
+      τ   Precision    Recall       F1    Avg FP   Trigger%
+   0.00       0.169     0.409    0.216      11.4      26.5%
+   0.25       0.185     0.409    0.236      10.6      24.6%
+   0.50       0.198     0.529    0.256       9.4      22.3% ←OPT
+   0.75       0.129     0.289    0.156       7.4      17.7%
+   1.00       0.129     0.289    0.156       6.8      16.5%
+   1.50       0.082     0.078    0.080       6.0      14.2%
+   2.00       0.082     0.078    0.080       5.8      13.8%
+   2.50       0.082     0.078    0.080       5.6      13.5%
+   2.80       0.082     0.078    0.080       5.6      13.5%
+   3.00       0.082     0.078    0.080       5.6      13.5%
+   3.50       0.047     0.044    0.046       6.2      13.5%
+   4.00       0.094     0.089    0.091       5.4      13.5%
+   5.00       0.062     0.044    0.052       5.4      11.9%
+
+  [Information Function]  optimal τ=2.80,  best F1=0.143
+      τ   Precision    Recall       F1    Avg FP   Trigger%
+   0.00       0.068     0.600    0.118      11.0      22.7%
+   0.25       0.068     0.600    0.118      11.0      22.7%
+   0.50       0.068     0.600    0.118      11.0      22.7%
+   0.75       0.068     0.600    0.118      10.8      22.3%
+   1.00       0.068     0.600    0.118      10.6      21.9%
+   1.50       0.054     0.400    0.093      10.8      21.9%
+   2.00       0.054     0.400    0.093      10.0      20.4%
+   2.50       0.054     0.400    0.093       9.2      18.8%
+   2.80       0.083     0.600    0.143       8.2      17.3% ←OPT
+   3.00       0.055     0.400    0.095       8.0      16.5%
+   3.50       0.079     0.600    0.134       6.8      14.6%
+   4.00       0.084     0.600    0.142       5.6      12.3%
+   5.00       0.087     0.400    0.136       3.6       8.1%
+
+  [Text-Rich Understanding]  optimal τ=2.00,  best F1=0.288
+      τ   Precision    Recall       F1    Avg FP   Trigger%
+   0.00       0.198     0.450    0.265       8.0      22.3%
+   0.25       0.198     0.450    0.265       8.0      22.3%
+   0.50       0.198     0.450    0.265       8.0      22.3%
+   0.75       0.182     0.425    0.245       8.2      21.9%
+   1.00       0.182     0.425    0.245       8.2      21.9%
+   1.50       0.209     0.425    0.263       7.6      20.0%
+   2.00       0.265     0.425    0.288       6.4      17.7% ←OPT
+   2.50       0.248     0.375    0.245       6.0      16.2%
+   2.80       0.165     0.325    0.181       5.8      14.2%
+   3.00       0.198     0.325    0.185       5.6      13.8%
+   3.50       0.078     0.250    0.116       5.0      11.9%
+   4.00       0.078     0.250    0.116       4.4      10.4%
+   5.00       0.125     0.150    0.107       1.6       4.2%
+
+  [Object Recognition]  optimal τ=2.50,  best F1=0.143
+      τ   Precision    Recall       F1    Avg FP   Trigger%
+   0.00       0.082     0.308    0.128       9.0      21.4%
+   0.25       0.082     0.308    0.128       9.0      21.4%
+   0.50       0.082     0.308    0.128       9.0      21.4%
+   0.75       0.082     0.308    0.128       8.8      21.0%
+   1.00       0.067     0.258    0.105       8.8      20.6%
+   1.50       0.067     0.258    0.105       8.8      20.6%
+   2.00       0.086     0.308    0.132       8.2      19.5%
+   2.50       0.096     0.308    0.143       7.6      17.6% ←OPT
+   2.80       0.049     0.183    0.074       6.2      14.1%
+   3.00       0.092     0.258    0.129       5.0      13.0%
+   3.50       0.027     0.133    0.044       3.4       8.0%
+   4.00       0.027     0.133    0.044       2.6       6.5%
+   5.00       0.080     0.133    0.100       0.6       2.3%
+
+  [Ego Object Localization]  optimal τ=1.50,  best F1=0.223
+      τ   Precision    Recall       F1    Avg FP   Trigger%
+   0.00       0.124     0.950    0.208      11.0      28.1%
+   0.25       0.115     0.750    0.190      11.0      27.7%
+   0.50       0.101     0.700    0.169      11.0      27.3%
+   0.75       0.105     0.700    0.173      10.8      26.9%
+   1.00       0.116     0.700    0.189      10.4      26.2%
+   1.50       0.143     0.700    0.223      10.0      25.4% ←OPT
+   2.00       0.111     0.650    0.179      10.0      24.6%
+   2.50       0.131     0.650    0.202       9.6      23.8%
+   2.80       0.061     0.250    0.071       8.4      19.5%
+   3.00       0.078     0.250    0.078       8.2      19.1%
+   3.50       0.011     0.200    0.021       6.6      14.3%
+   4.00       0.000     0.000    0.000       5.8      11.0%
+   5.00       0.000     0.000    0.000       2.0       3.8%
+
+  [Action Recognition]  optimal τ=0.50,  best F1=0.240
+      τ   Precision    Recall       F1    Avg FP   Trigger%
+   0.00       0.192     0.321    0.235      10.8      25.5%
+   0.25       0.180     0.265    0.209      10.2      23.6%
+   0.50       0.209     0.293    0.240       8.8      21.2% ←OPT
+   0.75       0.219     0.243    0.226       7.2      17.8%
+   1.00       0.113     0.113    0.112       5.8      13.0%
+   1.50       0.163     0.113    0.132       2.2       6.2%
+   2.00       0.083     0.050    0.062       1.2       3.4%
+   2.50       0.083     0.025    0.038       0.5       1.4%
+   2.80       0.000     0.000    0.000       0.2       0.5%
+   3.00       0.000     0.000    0.000       0.0       0.0%
+   3.50       0.000     0.000    0.000       0.0       0.0%
+   4.00       0.000     0.000    0.000       0.0       0.0%
+   5.00       0.000     0.000    0.000       0.0       0.0%
+
+  [Object State Change Recognition]  optimal τ=0.00,  best F1=0.144
+      τ   Precision    Recall       F1    Avg FP   Trigger%
+   0.00       0.096     0.400    0.144       7.8      16.9% ←OPT
+   0.25       0.056     0.333    0.094       7.6      16.2%
+   0.50       0.071     0.200    0.100       7.2      15.4%
+   0.75       0.031     0.133    0.050       6.6      13.8%
+   1.00       0.031     0.133    0.050       5.0      10.8%
+   1.50       0.031     0.133    0.050       3.8       8.5%
+   2.00       0.018     0.067    0.029       2.0       4.6%
+   2.50       0.040     0.067    0.050       0.8       2.3%
+   2.80       0.200     0.067    0.100       0.0       0.8%
+   3.00       0.000     0.000    0.000       0.0       0.0%
+   3.50       0.000     0.000    0.000       0.0       0.0%
+   4.00       0.000     0.000    0.000       0.0       0.0%
+   5.00       0.000     0.000    0.000       0.0       0.0%
+
+  [Action Reasoning]  optimal τ=0.00,  best F1=0.500
+      τ   Precision    Recall       F1    Avg FP   Trigger%
+   0.00       1.000     0.333    0.500       0.0       5.6% ←OPT
+   0.25       1.000     0.333    0.500       0.0       5.6%
+   0.50       1.000     0.333    0.500       0.0       5.6%
+   0.75       1.000     0.333    0.500       0.0       5.6%
+   1.00       0.000     0.000    0.000       0.0       0.0%
+   1.50       0.000     0.000    0.000       0.0       0.0%
+   2.00       0.000     0.000    0.000       0.0       0.0%
+   2.50       0.000     0.000    0.000       0.0       0.0%
+   2.80       0.000     0.000    0.000       0.0       0.0%
+   3.00       0.000     0.000    0.000       0.0       0.0%
+   3.50       0.000     0.000    0.000       0.0       0.0%
+   4.00       0.000     0.000    0.000       0.0       0.0%
+   5.00       0.000     0.000    0.000       0.0       0.0%
+
+  [Task Understanding]  optimal τ=0.00,  best F1=0.434
+      τ   Precision    Recall       F1    Avg FP   Trigger%
+   0.00       0.419     0.489    0.434       1.7      22.3% ←OPT
+   0.25       0.419     0.489    0.434       1.7      22.3%
+   0.50       0.419     0.489    0.434       1.7      22.3%
+   0.75       0.419     0.489    0.434       1.7      22.3%
+   1.00       0.419     0.489    0.434       1.7      22.3%
+   1.50       0.419     0.489    0.434       1.7      22.3%
+   2.00       0.419     0.489    0.434       1.7      22.3%
+   2.50       0.419     0.489    0.434       1.7      22.3%
+   2.80       0.419     0.489    0.434       1.7      22.3%
+   3.00       0.419     0.489    0.434       1.7      22.3%
+   3.50       0.444     0.400    0.380       1.3      17.7%
+   4.00       0.444     0.311    0.288       1.3      12.8%
+   5.00       0.111     0.222    0.148       1.3      11.1%
+
+────────────────────────────────────────────────────────────────────────────────
+SECTION 6: FAILURE MODE DEEP-DIVE
+────────────────────────────────────────────────────────────────────────────────
+
+  [Action Recognition]
+    Gap separation:    +0.831  (GT=1.141 ± 1.000, non-GT=0.309 ± 1.400)
+    Optimal τ: 0.50  Best F1: 0.240  Baseline F1: 0.235  Delta: +0.005
+    F1 at key τ: τ=0.0→0.235, τ=0.5→0.240, τ=1.0→0.112, τ=2.0→0.062, τ=2.8→0.000, τ=5.0→0.000
+    Worst cases (by Δ vs baseline):
+      Δ=+0.046  adaptive_f1=0.182  baseline_f1=0.136  Q: Can you remind me when I use the grinding machine on the met
+      Δ=+0.050  adaptive_f1=0.250  baseline_f1=0.200  Q: I want to know when I sprinkle flour on the mound of dough. 
+      Δ=+0.057  adaptive_f1=0.261  baseline_f1=0.204  Q: I want to know when I scroll through my phone. Could you let
+
+  [Attribute Perception]
+    Gap separation:    +1.793  (GT=4.417 ± 2.244, non-GT=2.625 ± 4.239)
+    Optimal τ: 0.50  Best F1: 0.256  Baseline F1: 0.216  Delta: +0.040
+    F1 at key τ: τ=0.0→0.216, τ=0.5→0.256, τ=1.0→0.156, τ=2.0→0.080, τ=2.8→0.080, τ=5.0→0.052
+    Worst cases (by Δ vs baseline):
+      Δ=-0.079  adaptive_f1=0.133  baseline_f1=0.213  Q: Can you remind me of the color of the monitor when I stare a
+      Δ=-0.077  adaptive_f1=0.444  baseline_f1=0.522  Q: Can you remind me of the color of the dough when I roll it o
+      Δ=-0.036  adaptive_f1=0.000  baseline_f1=0.036  Q: What color are the gloves I am wearing when I fix the bolt i
+
+────────────────────────────────────────────────────────────────────────────────
+SECTION 7: PHASE III RECOMMENDATIONS
+────────────────────────────────────────────────────────────────────────────────
+
+  Gap discriminability classification:
+    High separation (sep > 0.5) — D effective with tuned τ:
+      Information Function                          sep=+2.608  recommend τ=2.80
+      Object Recognition                            sep=+2.553  recommend τ=2.50
+      Object State Change Recognition               sep=+2.236  recommend τ=0.00
+      Text-Rich Understanding                       sep=+1.873  recommend τ=2.00
+      Attribute Perception                          sep=+1.793  recommend τ=0.50
+      Object Function                               sep=+1.488  recommend τ=0.50
+      Object Localization                           sep=+1.289  recommend τ=5.00
+      Ego Object State Change Recognition           sep=+1.114  recommend τ=0.50
+      Action Recognition                            sep=+0.831  recommend τ=0.50
+      Ego Object Localization                       sep=+0.677  recommend τ=1.50
+    Low separation (sep ≤ 0.2) — D ineffective, use τ=0 (or bypass):
+      Task Understanding                            sep=-2.072
+
+  Strategy options for Phase III:
+  A. Adaptive-τ routing: detect task type at runtime → select τ from lookup table
+     Requires: task type classifier (e.g. keyword matching on question)
+     Expected F1: ~0.222 vs baseline 0.141
+  B. Mixed strategy: D-filter for high-sep types, bypass for low-sep types
+     Simpler to implement, robust to classifier errors
+  C. External trigger model: train binary classifier on (gap, task_type, context)
+     Highest potential but requires labeled data and training infrastructure
+
+  Adaptive-D PASSES gate 2. Recommendation: proceed with strategy A or B.
+
+================================================================================
+Report generated: 53 cases, 12 task types
+================================================================================

@@ -1,0 +1,179 @@
+================================================================================
+Phase 3 Hypothesis A: Task-Semantic Enriched Trigger
+================================================================================
+
+Cases tested: 3, Skipped: 0
+
+--- Aggregate Metrics ---
+  Baseline avg F1:    0.084 (std=0.020)
+  Hypothesis avg F1:  0.076 (std=0.031)
+  Delta F1:           -0.008
+  Cases improved:     1/3
+  Cases degraded:     1/3
+  Cases unchanged:    1/3
+  Baseline avg FP:    30.7
+  Hypothesis avg FP:  27.7
+
+--- Per-Case Analysis ---
+
+  Case 1: Object Function
+  Q: Which object could help if I want to sweep some dust away?
+  Duration: 304s, GT windows: 2
+  GT spans: ['2434-2436s', '2440-2453s']
+  GT answers: ['The broom could help you on that.', 'The broom could help you on that.']
+  BASELINE: F1=0.075, Preds=53, Hits=2/2, FP=49
+    Pred times: ['2433s', '2439s', '2445s', '2450s', '2456s', '2462s', '2468s', '2473s', '2479s', '2485s', '2490s', '2496s', '2502s', '2508s', '2513s', '2519s', '2525s', '2530s', '2536s', '2542s', '2548s', '2553s', '2559s', '2565s', '2570s', '2576s', '2582s', '2588s', '2593s', '2599s', '2605s', '2610s', '2616s', '2622s', '2628s', '2633s', '2639s', '2645s', '2650s', '2656s', '2662s', '2668s', '2673s', '2679s', '2685s', '2690s', '2696s', '2702s', '2708s', '2713s', '2719s', '2725s', '2730s']
+  HYPO-A: F1=0.045, Preds=44, Hits=1/2, FP=41
+    Pred times: ['2439s', '2445s', '2450s', '2456s', '2462s', '2468s', '2473s', '2479s', '2485s', '2490s', '2496s', '2502s', '2508s', '2513s', '2519s', '2525s', '2530s', '2536s', '2542s', '2548s', '2553s', '2559s', '2565s', '2570s', '2576s', '2582s', '2588s', '2593s', '2599s', '2605s', '2610s', '2616s', '2628s', '2633s', '2645s', '2650s', '2656s', '2662s', '2668s', '2673s', '2679s', '2696s', '2719s', '2730s']
+  VERDICT: DEGRADED (delta=-0.030)
+
+  Case 2: Object Function
+  Q: Where can I find a mini-market here?
+  Duration: 302s, GT windows: 3
+  GT spans: ['132-135s', '140-144s', '128-131s']
+  GT answers: ['Look for an orange sign labeled "tamimi markets express" above the entrance to y', 'Look for an orange sign labeled "tamimi markets express" above the entrance to y', 'Look for an orange sign labeled "tamimi markets express" above the entrance to y']
+  BASELINE: F1=0.065, Preds=28, Hits=1/3, FP=27
+    Pred times: ['143s', '149s', '154s', '160s', '166s', '171s', '177s', '183s', '189s', '194s', '200s', '206s', '211s', '217s', '223s', '229s', '234s', '240s', '246s', '251s', '257s', '263s', '269s', '274s', '280s', '286s', '291s', '297s']
+  HYPO-A: F1=0.065, Preds=28, Hits=1/3, FP=27
+    Pred times: ['143s', '149s', '154s', '160s', '166s', '171s', '177s', '183s', '189s', '194s', '200s', '206s', '211s', '217s', '223s', '229s', '234s', '240s', '246s', '251s', '257s', '263s', '269s', '274s', '280s', '286s', '291s', '297s']
+  VERDICT: UNCHANGED (delta=+0.000)
+
+  Case 3: Object Function
+  Q: I want to use some tool to help me move faster than walk. What can help?
+  Duration: 174s, GT windows: 1
+  GT spans: ['630-661s']
+  GT answers: ['You can use one of the bikes to help you move faster.']
+  BASELINE: F1=0.111, Preds=22, Hits=1/1, FP=16
+    Pred times: ['592s', '598s', '603s', '609s', '615s', '620s', '626s', '632s', '638s', '643s', '649s', '655s', '660s', '666s', '672s', '678s', '683s', '689s', '695s', '700s', '706s', '712s']
+  HYPO-A: F1=0.118, Preds=21, Hits=1/1, FP=15
+    Pred times: ['598s', '603s', '609s', '615s', '620s', '626s', '632s', '638s', '643s', '649s', '655s', '660s', '666s', '672s', '678s', '683s', '689s', '695s', '700s', '706s', '712s']
+  VERDICT: IMPROVED (delta=+0.007)
+  [HARD CASE DETAIL]
+    Baseline answer (t=592s): Based on the images provided, there are bicycles visible outside the store. In the final frames, you can see several bic
+    Baseline answer (t=598s): Based on the images, a bicycle can help you move faster than walking. In several frames, bicycles are visible parked out
+    Baseline answer (t=603s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Evidence from the i
+    Baseline answer (t=609s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Evidence from the i
+    Baseline answer (t=615s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Evidence from the i
+    Baseline answer (t=620s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Evidence from the i
+    Baseline answer (t=626s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Evidence from the i
+    Baseline answer (t=632s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Evidence from the i
+    Baseline answer (t=638s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Evidence from the i
+    Baseline answer (t=643s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Here's the reasonin
+    Baseline answer (t=649s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Here's the reasonin
+    Baseline answer (t=655s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Here's the reasonin
+    Baseline answer (t=660s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Here's the reasonin
+    Baseline answer (t=666s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Here's the reasonin
+    Baseline answer (t=672s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Here's the reasonin
+    Baseline answer (t=678s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Here's the reasonin
+    Baseline answer (t=683s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Here's the reasonin
+    Baseline answer (t=689s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Here's the reasonin
+    Baseline answer (t=695s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Here's the reasonin
+    Baseline answer (t=700s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Here's the reasonin
+    Baseline answer (t=706s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Here's the reasonin
+    Baseline answer (t=712s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Here's the reasonin
+    Hypo answer (t=598s): Based on the images, a bicycle can help you move faster than walking. In several frames, bicycles are visible parked out
+    Hypo answer (t=603s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Evidence from the i
+    Hypo answer (t=609s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Evidence from the i
+    Hypo answer (t=615s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Evidence from the i
+    Hypo answer (t=620s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Evidence from the i
+    Hypo answer (t=626s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Evidence from the i
+    Hypo answer (t=632s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Evidence from the i
+    Hypo answer (t=638s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Evidence from the i
+    Hypo answer (t=643s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Here's the reasonin
+    Hypo answer (t=649s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Here's the reasonin
+    Hypo answer (t=655s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Here's the reasonin
+    Hypo answer (t=660s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Here's the reasonin
+    Hypo answer (t=666s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Here's the reasonin
+    Hypo answer (t=672s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Here's the reasonin
+    Hypo answer (t=678s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Here's the reasonin
+    Hypo answer (t=683s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Here's the reasonin
+    Hypo answer (t=689s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Here's the reasonin
+    Hypo answer (t=695s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Here's the reasonin
+    Hypo answer (t=700s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Here's the reasonin
+    Hypo answer (t=706s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Here's the reasonin
+    Hypo answer (t=712s): Based on the images provided, the tool that can help you move faster than walking is a **bicycle**.
+
+Here's the reasonin
+
+--- Trigger Pattern Analysis ---
+  Total polling steps: 135
+  Baseline triggers:   103 (76.3%)
+  Hypothesis triggers: 93 (68.9%)

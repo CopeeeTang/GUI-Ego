@@ -1,0 +1,83 @@
+════════════════════════════════════════════════════════════════════════════════
+Phase III Stage A: Learned Trigger (D-features MLP)
+════════════════════════════════════════════════════════════════════════════════
+Generated: 2026-02-18 18:26
+Evaluation: Task-Type Leave-One-Out (TTLOO)
+Features:   gap, slope, volatility, since_last_trig, step_progress, stagnation
+Model:      MLP 6→32→16→1  |  Backend: PyTorch
+Target:     F1 > 0.222 (Adaptive-D Phase II in-sample)
+────────────────────────────────────────────────────────────────────────────────
+SECTION 1: AGGREGATE RESULTS (TTLOO)
+────────────────────────────────────────────────────────────────────────────────
+  Method                                 Avg F1   N cases
+  ───────────────────────────────────  ────────  ────────
+  Baseline (τ=0, no cd)                   0.141        53
+  D@2.8 + cd=12                           0.109        53
+  Adaptive-D (Phase II in-sample ref)     0.222         —
+  Adaptive-D (TTLOO, fair baseline)       0.196        53
+  MLP Stage A (TTLOO)                     0.219        53
+
+  Gate 1 — MLP vs Adaptive-D TTLOO (fair):
+    Delta F1:  mean=+0.023  95% CI=[-0.058, +0.113]
+    >>> BORDERLINE <<<
+  Gate 2 — MLP vs D@2.8: mean=+0.110  95% CI=[+0.036, +0.184]
+────────────────────────────────────────────────────────────────────────────────
+SECTION 2: PER TASK-TYPE RESULTS (TTLOO)
+────────────────────────────────────────────────────────────────────────────────
+  Task Type                                        n   BL F1  Adp-D F1   MLP F1   Δ(MLP-BL)    thr
+  ─────────────────────────────────────────────  ───  ──────  ────────  ───────  ──────────  ─────
+  Ego Object Localization                          5   0.090     0.179    0.424      +0.334   0.60
+  Ego Object State Change Recognition              5   0.123     0.172    0.367      +0.244   0.65
+  Object Function                                  5   0.121     0.073    0.270      +0.150   0.65
+  Object Recognition                               5   0.114     0.143    0.260      +0.147   0.60
+  Task Understanding                               3   0.368     0.434    0.245      -0.123   0.75
+  Information Function                             5   0.077     0.143    0.213      +0.136   0.55
+  Text-Rich Understanding                          5   0.166     0.288    0.187      +0.021   0.60
+  Attribute Perception                             5   0.204     0.256    0.181      -0.023   0.65
+  Object Localization                              5   0.060     0.173    0.162      +0.101   0.65
+  Object State Change Recognition                  5   0.082     0.050    0.114      +0.033   0.65
+  Action Reasoning                                 1   0.500     0.000    0.000      -0.500   0.65
+  Action Recognition                               4   0.173     0.240    0.000      -0.173   0.65
+────────────────────────────────────────────────────────────────────────────────
+SECTION 3: CASE-LEVEL RESULTS
+────────────────────────────────────────────────────────────────────────────────
+  Improved:  22/53 (42%)
+  Degraded:  25/53 (47%)
+  Unchanged: 6/53
+
+  Top 5 improved cases (MLP vs Baseline):
+    [Ego Object Localization                   ] Δ=+0.905  BL=0.095 → MLP=1.000
+    [Object Function                           ] Δ=+0.667  BL=0.000 → MLP=0.667
+    [Object Localization                       ] Δ=+0.629  BL=0.038 → MLP=0.667
+    [Ego Object State Change Recognition       ] Δ=+0.611  BL=0.056 → MLP=0.667
+    [Ego Object State Change Recognition       ] Δ=+0.587  BL=0.080 → MLP=0.667
+
+  Top 5 degraded cases (MLP vs Baseline):
+    [Task Understanding                        ] Δ=-0.647  BL=0.882 → MLP=0.235
+    [Action Reasoning                          ] Δ=-0.500  BL=0.500 → MLP=0.000
+    [Ego Object State Change Recognition       ] Δ=-0.333  BL=0.333 → MLP=0.000
+    [Attribute Perception                      ] Δ=-0.282  BL=0.522 → MLP=0.240
+    [Text-Rich Understanding                   ] Δ=-0.238  BL=0.438 → MLP=0.200
+────────────────────────────────────────────────────────────────────────────────
+SECTION 4: VIDEO-LEVEL SPLIT CHECK
+────────────────────────────────────────────────────────────────────────────────
+  Purpose: detect if model learned scene-specific biases.
+  Method:  within-type train/test split by video_uid (threshold=0.3 fixed).
+
+  [skipped — insufficient data for video-level split]
+────────────────────────────────────────────────────────────────────────────────
+SECTION 5: FEATURE SUMMARY
+────────────────────────────────────────────────────────────────────────────────
+  Stage A features (6-dim):
+    0: gap              — raw logprob_gap (primary D signal)
+    1: slope            — gap change rate over last 5 steps
+    2: volatility       — gap std over last 10 steps
+    3: since_last_trig  — time since last trigger (norm 60s)
+    4: step_progress    — step / n_steps
+    5: stagnation       — log-norm time since last high-vol event
+
+  Stage B (next): + CLIP ViT-B/32 embedding (64-dim)
+  Stage C (next): + goal_state_gap_score (3-dim one-hot, VLM 10s)
+════════════════════════════════════════════════════════════════════════════════
+Report generated: 53 cases  |  12 TTLOO folds
+════════════════════════════════════════════════════════════════════════════════

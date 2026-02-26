@@ -1,0 +1,151 @@
+================================================================================
+GPT-4o FBF Yes-Bias Pilot Test Report
+================================================================================
+
+Cases: 60 valid (of 60 total)
+Polling rate: 0.175 Hz (~5.7s per step)
+API: Azure OpenAI GPT-4o @ http://52.151.57.21:9999/openai/deployments/gpt-4o/chat/completions?api-version=2024-09-01-preview
+
+────────────────────────────────────────────────────────────────────────────────
+OVERALL YES-BIAS ANALYSIS
+────────────────────────────────────────────────────────────────────────────────
+  Total polling steps: 3017
+  Total 'yes' triggers: 1614
+  Yes-rate: 53.5%
+  Total API time: 9109s (avg 3.0s/step)
+
+  Reference: Qwen3-VL yes-rate = 76-83%
+  >>> GPT-4o shows moderate yes-bias (53%)
+
+────────────────────────────────────────────────────────────────────────────────
+LOGPROB GAP DISTRIBUTION
+────────────────────────────────────────────────────────────────────────────────
+  gap = logP(yes) - logP(no)
+  gap > 0 means model favors 'yes'
+
+  All gaps (n=3009):
+    mean=-0.024, std=10.081, median=1.250
+    min=-21.500, max=20.250
+  GT-window gaps (n=621):
+    mean=6.743, std=6.295
+  Non-GT gaps (n=2388):
+    mean=-1.784, std=10.137
+  Separation (GT - non-GT mean): +8.527
+  Reference: Qwen3-VL separation = +1.418 (GT=2.226, non-GT=0.808)
+  Welch t-test: t=26.072, p=0.0000
+  >>> Gap is discriminative (p<0.001)
+
+  Threshold coverage:
+    gap > 0.0: 53.7% of frames
+    gap > 0.5: 52.2% of frames
+    gap > 1.0: 50.5% of frames
+    gap > 2.0: 46.9% of frames
+    gap > 3.0: 43.0% of frames
+    gap > 5.0: 35.7% of frames
+
+────────────────────────────────────────────────────────────────────────────────
+PER-TASK-TYPE ANALYSIS
+────────────────────────────────────────────────────────────────────────────────
+  Task Type                                  n  steps   yes%  gap_mean   gt_gap  ngt_gap
+  ---------------------------------------------------------------------------------
+  Action Reasoning                           5    201   90%     5.484    5.883    3.018
+  Action Recognition                         5    260   61%     1.580    2.913    1.450
+  Attribute Perception                       5    260   71%     5.263   10.683    4.661
+  Ego Object Localization                    5    233   45%    -2.394   -2.269   -2.401
+  Ego Object State Change Recognition        5    260    9%   -12.108   -3.854  -12.509
+  Information Function                       5    260   47%    -2.963    3.016   -3.355
+  Object Function                            5    260   60%     4.712    8.897    3.940
+  Object Localization                        5    260   78%     6.505   11.648    6.277
+  Object Recognition                         5    261   38%    -1.673    4.194   -2.739
+  Object State Change Recognition            5    260   31%    -4.289    1.917   -4.589
+  Task Understanding                         5    242   92%     8.460    9.020    5.372
+  Text-Rich Understanding                    5    260   30%    -7.242    6.618  -10.640
+
+────────────────────────────────────────────────────────────────────────────────
+ESTP-F1 (VANILLA FBF BASELINE)
+────────────────────────────────────────────────────────────────────────────────
+  Information Function           F1=0.158 P=0.086 R=1.000 FP=32
+  Text-Rich Understanding        F1=0.778 P=0.700 R=0.875 FP=3
+  Object Function                F1=0.242 P=0.143 R=0.800 FP=24
+  Action Reasoning               F1=0.000 P=0.000 R=0.000 FP=12
+  Task Understanding             F1=0.235 P=0.143 R=0.667 FP=12
+  Ego Object Localization        F1=0.500 P=0.333 R=1.000 FP=2
+  Object Function                F1=0.038 P=0.020 R=0.500 FP=49
+  Object Recognition             F1=1.000 P=1.000 R=1.000 FP=0
+  Text-Rich Understanding        F1=0.000 P=0.000 R=0.000 FP=0
+  Object State Change Recognition F1=0.500 P=0.333 R=1.000 FP=2
+  Ego Object Localization        F1=0.133 P=0.071 R=1.000 FP=13
+  Object Localization            F1=0.000 P=0.000 R=0.000 FP=39
+  Text-Rich Understanding        F1=0.286 P=0.167 R=1.000 FP=20
+  Object State Change Recognition F1=0.571 P=0.500 R=0.667 FP=2
+  Information Function           F1=0.059 P=0.030 R=1.000 FP=32
+  Ego Object State Change Recognition F1=0.000 P=0.000 R=0.000 FP=0
+  Object Recognition             F1=0.190 P=0.111 R=0.667 FP=16
+  Text-Rich Understanding        F1=0.000 P=0.000 R=0.000 FP=0
+  Object Function                F1=0.000 P=0.000 R=0.000 FP=1
+  Text-Rich Understanding        F1=0.222 P=0.125 R=1.000 FP=7
+  Object Recognition             F1=0.727 P=0.571 R=1.000 FP=3
+  Object Localization            F1=0.044 P=0.023 R=1.000 FP=43
+  Object Localization            F1=0.075 P=0.039 R=1.000 FP=49
+  Attribute Perception           F1=0.000 P=0.000 R=0.000 FP=32
+  Action Recognition             F1=0.136 P=0.080 R=0.444 FP=46
+  Action Recognition             F1=0.320 P=0.200 R=0.800 FP=16
+  Ego Object Localization        F1=0.108 P=0.061 R=0.500 FP=31
+  Attribute Perception           F1=0.136 P=0.077 R=0.600 FP=36
+  Object State Change Recognition F1=0.071 P=0.037 R=1.000 FP=26
+  Action Recognition             F1=0.308 P=0.250 R=0.400 FP=12
+  Action Recognition             F1=0.098 P=0.056 R=0.400 FP=34
+  Ego Object Localization        F1=0.222 P=0.125 R=1.000 FP=7
+  Ego Object State Change Recognition F1=0.000 P=0.000 R=0.000 FP=0
+  Ego Object State Change Recognition F1=0.000 P=0.000 R=0.000 FP=0
+  Task Understanding             F1=0.875 P=0.824 R=0.933 FP=3
+  Attribute Perception           F1=0.036 P=0.019 R=0.333 FP=51
+  Object Function                F1=0.089 P=0.047 R=1.000 FP=41
+  Action Recognition             F1=0.158 P=0.100 R=0.375 FP=27
+  Attribute Perception           F1=0.545 P=0.375 R=1.000 FP=30
+  Ego Object State Change Recognition F1=0.333 P=0.200 R=1.000 FP=12
+  Attribute Perception           F1=0.111 P=0.059 R=1.000 FP=16
+  Object Localization            F1=0.061 P=0.031 R=1.000 FP=31
+  Information Function           F1=0.041 P=0.021 R=1.000 FP=47
+  Object Function                F1=0.667 P=0.500 R=1.000 FP=2
+  Object Recognition             F1=0.333 P=0.250 R=0.500 FP=6
+  Object State Change Recognition F1=0.667 P=0.667 R=0.667 FP=1
+  Object State Change Recognition F1=0.000 P=0.000 R=0.000 FP=25
+  Ego Object State Change Recognition F1=0.000 P=0.000 R=0.000 FP=1
+  Information Function           F1=1.000 P=1.000 R=1.000 FP=0
+  Object Recognition             F1=0.230 P=0.132 R=0.875 FP=46
+  Ego Object Localization        F1=0.040 P=0.020 R=1.000 FP=48
+  Object Localization            F1=0.128 P=0.068 R=1.000 FP=41
+  Information Function           F1=0.000 P=0.000 R=0.000 FP=3
+  Task Understanding             F1=0.562 P=0.391 R=1.000 FP=14
+  Action Reasoning               F1=0.667 P=0.667 R=0.667 FP=1
+  Action Reasoning               F1=0.909 P=1.000 R=0.833 FP=0
+  Task Understanding             F1=0.923 P=1.000 R=0.857 FP=0
+  Task Understanding             F1=0.966 P=1.000 R=0.933 FP=0
+  Action Reasoning               F1=0.842 P=0.762 R=0.941 FP=5
+  Action Reasoning               F1=0.000 P=0.000 R=0.000 FP=6
+
+  Avg F1: 0.289, Avg FP: 17.6
+  Reference: Qwen3-VL FBF F1=0.127 (60 cases)
+
+────────────────────────────────────────────────────────────────────────────────
+OFFLINE THRESHOLD SWEEP (GPT-4o)
+────────────────────────────────────────────────────────────────────────────────
+    tau   cd      F1    Prec     Rec    FP  Trig
+  ----------------------------------------------
+    0.0    0   0.289   0.240   0.654  1058  1617
+    0.0   12   0.291   0.280   0.426   426   634
+    0.5    0   0.288   0.245   0.632  1022  1571
+    0.5   12   0.291   0.280   0.428   415   623
+    1.0    0   0.295   0.252   0.628   979  1522
+    1.0   12   0.295   0.285   0.423   403   607
+    2.0    0   0.309   0.274   0.617   887  1411
+    2.0   12   0.313   0.306   0.438   362   565
+    3.0    0   0.315   0.283   0.608   807  1295
+    3.0   12   0.329   0.323   0.458   331   530
+    5.0    0   0.279   0.265   0.501   657  1076
+    5.0   12   0.279   0.289   0.362   282   454
+
+================================================================================
+Report generated: 60 cases
+================================================================================

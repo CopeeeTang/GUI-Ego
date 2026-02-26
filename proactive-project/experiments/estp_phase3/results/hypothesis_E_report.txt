@@ -1,0 +1,115 @@
+================================================================================
+Phase 3 Hypothesis E: Combined B+D+Cooldown Pipeline
+================================================================================
+
+Cases tested: 3, Skipped: 0
+
+--- Aggregate Metrics ---
+  Baseline avg F1:    0.131 (std=0.062)
+  Hypothesis avg F1:  0.121 (std=0.171)
+  Delta F1:           -0.010
+  Cases improved:     1/3
+  Cases degraded:     2/3
+  Cases unchanged:    0/3
+  Baseline avg FP:    38.3
+  Hypothesis avg FP:  4.3
+
+--- Per-Case Analysis ---
+
+  Case 1: Ego Object State Change Recognition
+  Q: When does the pair of gloves change their position relative to me?
+  Duration: 302s, GT windows: 3
+  GT spans: ['6-12s', '202-206s', '226-231s']
+  GT answers: ['You put them on.', 'You take them off.', 'You put them on.']
+  BASELINE: F1=0.113, Preds=52, Hits=3/3, FP=47
+    Pred times: ['6s', '12s', '18s', '23s', '29s', '35s', '40s', '46s', '52s', '58s', '63s', '69s', '75s', '80s', '86s', '92s', '98s', '103s', '109s', '115s', '120s', '126s', '132s', '138s', '143s', '149s', '155s', '160s', '166s', '172s', '178s', '183s', '189s', '195s', '201s', '206s', '212s', '218s', '223s', '229s', '235s', '241s', '246s', '252s', '258s', '263s', '269s', '275s', '281s', '286s', '292s', '298s']
+  HYPO-E: F1=0.364, Preds=8, Hits=2/3, FP=6
+    Pred times: ['12s', '46s', '166s', '189s', '206s', '223s', '241s', '275s']
+  VERDICT: IMPROVED (delta=+0.250)
+  [HARD CASE DETAIL]
+    Baseline answer (t=6s): The pair of gloves changes their position relative to you when you pick them up. In the first image, the gloves are lyin
+    Baseline answer (t=12s): The pair of gloves changes their position relative to you when you put them on. Initially, they are lying on the wooden 
+    Baseline answer (t=18s): The pair of gloves changes their position relative to you when you put them on. Initially, they are lying on the wooden 
+    Baseline answer (t=23s): The pair of gloves changes their position relative to you when you put them on. Initially, they are lying on the wooden 
+    Baseline answer (t=29s): The pair of gloves changes their position relative to you when you put them on. Initially, they are lying on the wooden 
+    Baseline answer (t=35s): The pair of gloves changes their position relative to you when you put them on. Initially, they are lying on the wooden 
+    Baseline answer (t=40s): The pair of gloves changes their position relative to you when you put them on. Initially, they are lying on the wooden 
+    Baseline answer (t=46s): The pair of gloves changes their position relative to you when you put them on. This occurs after you initially see them
+    Baseline answer (t=52s): The pair of gloves changes their position relative to you when you put them on. This occurs after you initially see them
+    Baseline answer (t=58s): The pair of gloves changes their position relative to you when you put them on. This occurs after you initially pick the
+    Baseline answer (t=63s): The pair of gloves changes their position relative to you when you put them on. This occurs after you initially pick the
+    Baseline answer (t=69s): The pair of gloves changes their position relative to you when you put them on. This occurs after you initially see them
+    Baseline answer (t=75s): The pair of gloves changes their position relative to you when you put them on. This occurs after you initially see them
+    Baseline answer (t=80s): The pair of gloves changes their position relative to you when you put them on. This occurs after you initially pick the
+    Baseline answer (t=86s): The pair of gloves changes their position relative to you when you put them on. This occurs after you initially see them
+    Baseline answer (t=92s): The pair of gloves changes their position relative to you when you put them on. This occurs in the sequence of images, s
+    Baseline answer (t=98s): The pair of gloves changes their position relative to you when you put them on. This occurs after you initially pick the
+    Baseline answer (t=103s): The pair of gloves changes their position relative to you when you put them on. This occurs after you initially pick the
+    Baseline answer (t=109s): The pair of gloves changes their position relative to you when you put them on. This occurs in the sequence of images, s
+    Baseline answer (t=115s): The pair of gloves changes their position relative to you when you put them on. This occurs in the sequence of images, s
+    Baseline answer (t=120s): The pair of gloves changes their position relative to you when you put them on. This occurs in the sequence of images, s
+    Baseline answer (t=126s): The pair of gloves changes their position relative to you when you put them on. This occurs in the sequence of images, s
+    Baseline answer (t=132s): The pair of gloves changes their position relative to you when you put them on. This occurs in the third image, where yo
+    Baseline answer (t=138s): The pair of gloves changes their position relative to you when you put them on. This occurs in the third image, where yo
+    Baseline answer (t=143s): The pair of gloves changes their position relative to you when you put them on. This occurs in the third image, where yo
+    Baseline answer (t=149s): The pair of gloves changes their position relative to you when you pick them up from the ground and put them on your han
+    Baseline answer (t=155s): The pair of gloves changes their position relative to you when you put them on. This occurs in the sequence of images, s
+    Baseline answer (t=160s): The pair of gloves changes their position relative to you when you put them on. This occurs in the sequence of images, s
+    Baseline answer (t=166s): The pair of gloves changes their position relative to you when you put them on. This occurs in the third image, where yo
+    Baseline answer (t=172s): The pair of gloves changes their position relative to you when you put them on. This occurs in the sequence of images, s
+    Baseline answer (t=178s): The pair of gloves changes their position relative to you when you put them on. This occurs in the third image, where yo
+    Baseline answer (t=183s): The pair of gloves changes their position relative to you when you put them on. This occurs in the third image, where yo
+    Baseline answer (t=189s): The pair of gloves changes their position relative to you when you put them on. This occurs in the third image, where yo
+    Baseline answer (t=195s): The pair of gloves changes their position relative to you when you pick them up from the ground and put them on your han
+    Baseline answer (t=201s): The pair of gloves changes their position relative to you when you pick them up from the wooden deck and put them on you
+    Baseline answer (t=206s): The pair of gloves changes their position relative to you when you put them on. This occurs in the second image, where y
+    Baseline answer (t=212s): The pair of gloves changes their position relative to you when you put them on. This occurs at the beginning of the sequ
+    Baseline answer (t=218s): The pair of gloves changes their position relative to you when you put them on. This occurs in the third image, where yo
+    Baseline answer (t=223s): The pair of gloves changes their position relative to you when you put them on.
+    Baseline answer (t=229s): The pair of gloves changes their position relative to you when you remove them and place them on the wooden deck. This o
+    Baseline answer (t=235s): The pair of gloves changes their position relative to you when you remove them and then put them back on, which occurs a
+    Baseline answer (t=241s): The pair of gloves changes their position relative to you when you remove them and put them on the wooden deck.
+    Baseline answer (t=246s): The pair of gloves changes their position relative to you when you remove them and then put them back on, which occurs d
+    Baseline answer (t=252s): The pair of gloves changes their position relative to you when you put them on. Initially, they are on the ground near t
+    Baseline answer (t=258s): The pair of gloves changes their position relative to you when you remove them and put them on your hands, which happens
+    Baseline answer (t=263s): The pair of gloves changes their position relative to you when you remove them and then put them back on, which occurs a
+    Baseline answer (t=269s): The pair of gloves changes their position relative to you when you remove them and put them on your hands, which happens
+    Baseline answer (t=275s): The pair of gloves changes their position relative to you when you remove them and put them on the wooden deck.
+    Baseline answer (t=281s): The pair of gloves changes their position relative to you when you put them on. Initially, they are on the ground near t
+    Baseline answer (t=286s): The pair of gloves changes their position relative to you when you remove them and put them on the wooden deck.
+    Baseline answer (t=292s): The pair of gloves changes their position relative to you when you remove them and put them on the wooden deck.
+    Baseline answer (t=298s): The pair of gloves changes their position relative to you when you remove them and put them on the wooden deck.
+    Hypo answer (t=12s): The pair of gloves changes their position relative to you when you put them on. Initially, they are lying on the wooden 
+    Hypo answer (t=46s): The pair of gloves changes their position relative to you when you pick them up from the ground and put them on. This ac
+    Hypo answer (t=166s): The pair of gloves changes their position relative to you when you pick them up from the ground and put them on your han
+    Hypo answer (t=189s): The pair of gloves changes their position relative to you when you switch from holding the broom with your right hand to
+    Hypo answer (t=206s): The pair of gloves changes their position relative to you when you put them on. In the first image, the gloves are lying
+    Hypo answer (t=223s): The pair of gloves changes their position relative to you when you put them down on the wooden deck after initially hold
+    Hypo answer (t=241s): The pair of gloves changes their position relative to you when you put them on. Initially, they are on the ground near y
+    Hypo answer (t=275s): The pair of gloves changes their position relative to you when you pick them up from the ground and put them on your han
+
+  Case 2: Action Recognition
+  Q: I want to know when I pick up items from the shelf in the market. Could you let me know?
+  Duration: 302s, GT windows: 4
+  GT spans: ['162-164s', '174-175s', '188-188s', '248-249s']
+  GT answers: ['You pick up the box from the shelf.', 'You pick up the packet from the shelf.', 'You pick the packet of milk from the shelf.', 'You pick up the box from the shelf.']
+  BASELINE: F1=0.067, Preds=26, Hits=1/4, FP=25
+    Pred times: ['154s', '160s', '166s', '171s', '177s', '183s', '189s', '194s', '200s', '206s', '211s', '217s', '223s', '229s', '234s', '240s', '246s', '251s', '257s', '263s', '269s', '274s', '280s', '286s', '291s', '297s']
+  HYPO-E: F1=0.000, Preds=7, Hits=0/4, FP=7
+    Pred times: ['160s', '177s', '194s', '211s', '229s', '246s', '263s']
+  VERDICT: DEGRADED (delta=-0.067)
+
+  Case 3: Ego Object State Change Recognition
+  Q: Can you remind me when the dough on the counter changes its position relative to me?
+  Duration: 302s, GT windows: 7
+  GT spans: ['3234-3234s', '3328-3336s', '3355-3362s', '3458-3465s', '3412-3414s', '3482-3483s', '3385-3387s']
+  GT answers: ['The dough on the counter remains relatively stationary, with only subtle changes', 'The dough changes its position relative to the observer when it is moved closer ', 'The dough changes its position relative to the observer when it is moved closer ', 'The dough changes its position relative to the observer as the camera moves slig', 'The dough on the counter changes its posistion due to manipulation by the baker.', 'The dough on the counter remains relatively stationary, with only subtle changes', 'The dough on the counter remains relatively stationary, with only subtle changes']
+  BASELINE: F1=0.214, Preds=52, Hits=6/7, FP=43
+    Pred times: ['3215s', '3221s', '3227s', '3232s', '3238s', '3244s', '3250s', '3255s', '3261s', '3267s', '3272s', '3278s', '3284s', '3290s', '3295s', '3301s', '3307s', '3312s', '3318s', '3324s', '3330s', '3335s', '3341s', '3347s', '3352s', '3358s', '3364s', '3370s', '3375s', '3381s', '3387s', '3392s', '3398s', '3404s', '3410s', '3415s', '3421s', '3427s', '3432s', '3438s', '3444s', '3450s', '3455s', '3461s', '3467s', '3472s', '3478s', '3484s', '3490s', '3495s', '3501s', '3507s']
+  HYPO-E: F1=0.000, Preds=0, Hits=0/7, FP=0
+  VERDICT: DEGRADED (delta=-0.214)
+
+--- Trigger Pattern Analysis ---
+  Total polling steps: 156
+  Baseline triggers:   130 (83.3%)
+  Hypothesis triggers: 15 (9.6%)

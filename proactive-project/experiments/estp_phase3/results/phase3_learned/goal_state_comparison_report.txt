@@ -1,0 +1,61 @@
+================================================================================
+Goal-State Cache Quality Comparison
+================================================================================
+
+────────────────────────────────────────────────────────────────────────────────
+SECTION 1: AGGREGATE COMPARISON
+────────────────────────────────────────────────────────────────────────────────
+  Model                   Cases  Buckets   Info%  GT mean nonGT mean   GT sep   n_GT  n_nonGT
+  ────────────────────  ───── ──────── ─────── ──────── ────────── ──────── ────── ────────
+  Gemini-2.0-Flash           53     1654  73.9%   +0.759     +0.122   -0.636     58     1596
+  Gemini-3-Flash             28      874  88.4%   +0.906     +0.311   -0.595     32      842
+
+  GT separation = mean(non_GT) - mean(GT)
+  Score: on_track=+1, uncertain=0, off_track=-1
+  Positive GT sep = model says off_track MORE during GT windows → good discriminability
+  Negative GT sep = model says off_track LESS during GT windows → wrong direction
+
+────────────────────────────────────────────────────────────────────────────────
+SECTION 2: LABEL DISTRIBUTION
+────────────────────────────────────────────────────────────────────────────────
+  Gemini-2.0-Flash:
+    on_track       731 (44.2%) █████████████████
+    uncertain      431 (26.1%) ██████████
+    off_track      492 (29.7%) ███████████
+
+  Gemini-3-Flash:
+    on_track       532 (60.9%) ████████████████████████
+    uncertain      101 (11.6%) ████
+    off_track      241 (27.6%) ███████████
+
+────────────────────────────────────────────────────────────────────────────────
+SECTION 3: PER TASK-TYPE GT SEPARATION
+────────────────────────────────────────────────────────────────────────────────
+  Task Type                                      Gemini-2.0       Gemini-3
+  ────────────────────────────────────────  ─────────────  ─────────────
+  Action Reasoning                             -1.000(100%)              —
+  Action Recognition                           -0.658(94%)   -0.069(94%)
+  Attribute Perception                         -0.664(72%)   -0.561(91%)
+  Ego Object Localization                      -0.864(44%)   +0.851(94%)
+  Ego Object State Change Recognition          -1.331(61%)   -0.375(84%)
+  Information Function                         -0.248(81%)   +0.312(75%)
+  Object Function                              -0.466(58%)   +0.023(82%)
+  Object Localization                          +0.610(83%)   +0.609(92%)
+  Object Recognition                           -0.727(89%)   -0.593(99%)
+  Object State Change Recognition              -0.321(65%)   -0.443(81%)
+  Task Understanding                           -0.179(84%)              —
+  Text-Rich Understanding                      -1.125(85%)   -1.359(95%)
+
+  Format: GT_separation(informative_rate)
+
+────────────────────────────────────────────────────────────────────────────────
+SECTION 4: VERDICT
+────────────────────────────────────────────────────────────────────────────────
+  Best GT separation: Gemini-3-Flash (-0.595)
+  Best informative rate: Gemini-3-Flash (88.4%)
+
+  Trade-off analysis:
+    Gemini-2.0-Flash       info=73.9%  sep=-0.636  → WEAK
+    Gemini-3-Flash         info=88.4%  sep=-0.595  → WEAK
+
+================================================================================

@@ -1,0 +1,44 @@
+
+======================================================================
+CLIP Filter Feasibility Analysis — Summary
+======================================================================
+
+Cases analyzed: 53
+
+--- Distributional Analysis ---
+  Mean clip_change (all frames):       0.0546 +/- 0.0241
+  Mean clip_change (GT windows):       0.0600 +/- 0.0316
+  Mean clip_change (non-GT frames):     0.0550 +/- 0.0244
+  Mean clip_change (2s before GT):      0.0635 +/- 0.0315
+  GT/non-GT ratio:                     1.09x
+
+  Cases with p90 peak in 2s before GT: 29/53
+
+--- Threshold Sweep ---
+ Threshold | Win Recall | Filter Rate | FP Frames | TP Frames
+-----------------------------------------------------------------
+     0.010 |      93.7% |       11.3% |     26181 |      1889
+     0.020 |      90.1% |       22.7% |     22854 |      1615
+     0.030 |      86.0% |       34.4% |     19392 |      1392
+     0.050 |      81.7% |       55.6% |     13072 |       982
+     0.070 |      66.9% |       71.0% |      8512 |       674
+     0.100 |      47.1% |       85.9% |      4170 |       303
+     0.150 |      20.4% |       96.3% |      1088 |        76
+     0.200 |       7.8% |       99.2% |       248 |        16
+     0.300 |       1.1% |      100.0% |        12 |         2
+
+--- Per-Task-Type Breakdown (theta=0.05) ---
+                Task Type |   N |  GT mean | nonGT mean |  Recall |  Filter%
+---------------------------------------------------------------------------
+         Action Reasoning |   1 |   0.0679 |     0.0393 |   66.7% |    72.9%
+       Action Recognition |   4 |   0.0568 |     0.0605 |   83.9% |    52.2%
+     Attribute Perception |   5 |   0.0661 |     0.0615 |   72.0% |    48.0%
+  Ego Object Localization |   5 |   0.0399 |     0.0426 |   75.0% |    65.7%
+Ego Object State Change Recognition |   5 |   0.0701 |     0.0565 |  100.0% |    57.0%
+     Information Function |   5 |   0.0583 |     0.0529 |  100.0% |    56.7%
+          Object Function |   5 |   0.0717 |     0.0789 |  100.0% |    33.7%
+      Object Localization |   5 |   0.0592 |     0.0442 |   90.0% |    67.0%
+       Object Recognition |   5 |   0.0534 |     0.0496 |   62.5% |    59.3%
+Object State Change Recognition |   5 |   0.0787 |     0.0634 |   93.3% |    44.7%
+       Task Understanding |   3 |    N/A   |     0.0572 |    0.0% |    49.3%
+  Text-Rich Understanding |   5 |   0.0438 |     0.0429 |   92.5% |    70.1%

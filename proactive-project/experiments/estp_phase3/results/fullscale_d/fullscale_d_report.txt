@@ -1,0 +1,110 @@
+================================================================================
+Phase I: Full-Scale Hypothesis D Validation (5-cases subset)
+Generated: 2026-02-18 06:42
+================================================================================
+
+Config: tau_primary=2.8 (GPU online), tau_compare=3.0 (offline), cooldown=12.0s, fps=0.175
+Cases: 60 (complete full run)
+Bootstrap: n_resamples=1000, seed=42
+
+────────────────────────────────────────────────────────────────────────────────
+OVERALL METRICS
+────────────────────────────────────────────────────────────────────────────────
+  Metric                              Baseline      D@2.8 (GPU)  D@3.0 (offline)
+  ────────────────────────────────────────────────────────────────────────────
+  Avg F1                                 0.127            0.114            0.087
+    std                                  0.152            0.181            0.137
+    min                                  0.000            0.000            0.000
+    max                                  0.929            0.857            0.500
+  Total FP                               1,516              287
+  Avg FP                                  25.3              4.8
+  Avg Recall                             0.668            0.237
+  Avg Precision                          0.086            0.137
+  Trigger Rate                           67.6%            12.8%
+
+  FP Reduction:  81%  (1,516 → 287)
+  Recall cost:   65%  (0.668 → 0.237)
+
+────────────────────────────────────────────────────────────────────────────────
+BOOTSTRAP 95% CONFIDENCE INTERVALS
+────────────────────────────────────────────────────────────────────────────────
+  Baseline F1         mean=0.127   95% CI=[0.092, 0.168]
+  D@2.8 F1 (GPU)      mean=0.114   95% CI=[0.069, 0.161]
+  D@3.0 F1 (offline)  mean=0.087   95% CI=[0.053, 0.123]
+  Baseline FP         mean=25.3   95% CI=[20.5, 29.7]
+  D@2.8 FP            mean=4.8   95% CI=[3.3, 6.5]
+
+────────────────────────────────────────────────────────────────────────────────
+GATE: Paired Delta CI  (D@2.8 vs Baseline)
+────────────────────────────────────────────────────────────────────────────────
+  Delta F1:     mean=-0.013  95% CI=[-0.059, +0.031]
+  Delta FP:     mean=-20.5  95% CI=[-24.1, -16.8]
+  Delta Recall: mean=-0.432  95% CI=[-0.532, -0.331]
+
+  >>> GATE: FAIL <<<
+      CI crosses 0. F1 improvement NOT significant at 95% confidence.
+      Precision improves and FP drops 81%, but recall collapses 65%.
+      τ=2.8 too strict at scale: correct triggers missed along with noise.
+
+────────────────────────────────────────────────────────────────────────────────
+TASK-TYPE STRATIFIED RESULTS  (sorted by ΔF1 descending)
+────────────────────────────────────────────────────────────────────────────────
+  Task Type                                      n  BL F1   D F1    ΔF1   BL FP  D FP
+  ────────────────────────────────────────────────────────────────────────────
+  Information Function                           5  0.068   0.143  +0.075   32.0   8.2
+  Text-Rich Understanding                        5  0.112   0.181  +0.069   24.2   5.8
+  Task Understanding                             5  0.250   0.307  +0.057    3.4   1.0
+  Object State Change Recognition                5  0.079   0.100  +0.021   22.8   0.0
+  Object Localization                            5  0.059   0.071  +0.012   49.4  12.6
+  Ego Object Localization                        5  0.085   0.071  -0.014   32.2   8.4
+  Object Function                                5  0.102   0.087  -0.015   24.6   4.4
+  Object Recognition                             5  0.099   0.074  -0.025   24.4   6.2
+  Ego Object State Change Recognition            5  0.122   0.088  -0.034   22.6   3.2
+  Action Reasoning                               5  0.197   0.160  -0.037    1.6   0.0
+  Attribute Perception                           5  0.203   0.080  -0.123   31.6   5.6
+  Action Recognition                             5  0.146   0.000  -0.146   34.4   2.0
+
+  D helps most:   Information Function (Δ=+0.075), Text-Rich Understanding (Δ=+0.069), Task Understanding (Δ=+0.057)
+  D hurts most:   Action Recognition (Δ=-0.146), Attribute Perception (Δ=-0.123)
+
+────────────────────────────────────────────────────────────────────────────────
+CASE-LEVEL SUMMARY
+────────────────────────────────────────────────────────────────────────────────
+  Improved:  19/60 (32%)
+  Degraded:  30/60 (50%)
+  Unchanged: 11/60 (18%)
+
+  Top 5 degraded cases:
+    [Task Understanding                           ] Δ=-0.693  Q: Please provide me with a detailed step-by-step guide to achi
+    [Ego Object State Change Recognition          ] Δ=-0.333  Q: Can you remind me how the dough changes position when I thro
+    [Action Reasoning                             ] Δ=-0.333  Q: What are the next steps to dice a red tomato after removing 
+    [Object State Change Recognition              ] Δ=-0.222  Q: Can you remind me when the state of the refrigerator changes
+    [Attribute Perception                         ] Δ=-0.217  Q: Can you remind me of the color of the monitor when I stare a
+
+  Top 5 improved cases:
+    [Task Understanding                           ] Δ=+0.599  Q: What should I do first, second, and so on to accomplish my g
+    [Object State Change Recognition              ] Δ=+0.409  Q: Can you remind me when the state of the phone changes?
+    [Task Understanding                           ] Δ=+0.381  Q: Can you guide me step by step on how to achieve my goal, suc
+    [Text-Rich Understanding                      ] Δ=+0.371  Q: What brand name is printed on the blue can on the coffee tab
+    [Ego Object State Change Recognition          ] Δ=+0.230  Q: When does the cat change its position relative to me?
+
+────────────────────────────────────────────────────────────────────────────────
+KEY FINDINGS
+────────────────────────────────────────────────────────────────────────────────
+  1. Logprob gap IS discriminative at scale
+     Phase 3 small-scale: GT mean=2.226 vs non-GT=0.808 (p<0.0001)
+
+  2. Gate FAILS: τ=2.8 recall-precision tradeoff unfavorable at scale
+     Baseline Recall=0.668 → D Recall=0.237 (−65%)
+     Baseline FP=1,516 → D FP=287 (−81%), insufficient gain
+
+  3. D effect is TASK-TYPE DEPENDENT (critical for Phase II):
+     Helps: abstract/contextual reasoning (Information Function, Text-Rich Understanding, Task Understanding)
+     Hurts: dense visual action tasks (Action Recognition, Attribute Perception)
+
+  4. Phase II recommendation: adaptive τ per task type
+     Action Recognition needs τ≈0 (no gap filtering); Info Function can use τ≥2.8
+
+================================================================================
+Report generated: 60 valid / 60 total cases (full-scale run)
+================================================================================

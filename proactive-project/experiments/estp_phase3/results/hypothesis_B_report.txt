@@ -1,0 +1,369 @@
+================================================================================
+Phase 3 Hypothesis B: Adaptive Temporal Attention Window (fixed)
+================================================================================
+
+Cases tested: 3, Skipped: 0
+
+--- Aggregate Metrics ---
+  Baseline avg F1:    0.136 (std=0.143)
+  Hypothesis avg F1:  0.044 (std=0.063)
+  Delta F1:           -0.092
+  Cases improved:     1/3
+  Cases degraded:     1/3
+  Cases unchanged:    1/3
+  Baseline avg FP:    31.0
+  Hypothesis avg FP:  11.0
+
+--- Per-Case Analysis ---
+
+  Case 1: Object Function
+  Q: Which object could help if I want to sweep some dust away?
+  Duration: 304s, GT windows: 2
+  GT spans: ['2434-2436s', '2440-2453s']
+  GT answers: ['The broom could help you on that.', 'The broom could help you on that.']
+  BASELINE: F1=0.075, Preds=53, Hits=2/2, FP=49
+    Pred times: ['2433s', '2439s', '2445s', '2450s', '2456s', '2462s', '2468s', '2473s', '2479s', '2485s', '2490s', '2496s', '2502s', '2508s', '2513s', '2519s', '2525s', '2530s', '2536s', '2542s', '2548s', '2553s', '2559s', '2565s', '2570s', '2576s', '2582s', '2588s', '2593s', '2599s', '2605s', '2610s', '2616s', '2622s', '2628s', '2633s', '2639s', '2645s', '2650s', '2656s', '2662s', '2668s', '2673s', '2679s', '2685s', '2690s', '2696s', '2702s', '2708s', '2713s', '2719s', '2725s', '2730s']
+  HYPO-B: F1=0.133, Preds=30, Hits=2/2, FP=26
+    Pred times: ['2433s', '2439s', '2445s', '2450s', '2456s', '2462s', '2468s', '2473s', '2479s', '2485s', '2490s', '2496s', '2502s', '2508s', '2513s', '2519s', '2559s', '2576s', '2582s', '2588s', '2593s', '2628s', '2633s', '2639s', '2685s', '2690s', '2696s', '2713s', '2725s', '2730s']
+  VERDICT: IMPROVED (delta=+0.058)
+  [HARD CASE DETAIL]
+    Baseline answer (t=2433s): Based on the images provided, the object that could help sweep dust away is the **pruning shears**.
+
+Here's the reasonin
+    Baseline answer (t=2439s): Based on the images provided, the object that could help you sweep some dust away is the **broom**.
+
+Here's the reasonin
+    Baseline answer (t=2445s): Based on the images provided, the object that could help you sweep some dust away is the **broom**.
+
+Here's the reasonin
+    Baseline answer (t=2450s): Based on the images, the object that could help you sweep some dust away is the **broom**.
+
+Here's why:
+- In several fra
+    Baseline answer (t=2456s): Based on the images, the object that could help you sweep some dust away is the **broom**.
+
+Here's why:
+- In several fra
+    Baseline answer (t=2462s): Based on the images provided, the object that could help you sweep some dust away is the **broom**.
+
+Here's the reasonin
+    Baseline answer (t=2468s): Based on the images provided, the object that could help you sweep some dust away is the **broom**.
+
+Here's the reasonin
+    Baseline answer (t=2473s): Based on the images provided, the object that could help you sweep some dust away is the **broom**.
+
+Here's the reasonin
+    Baseline answer (t=2479s): Based on the images, the object that could help you sweep some dust away is the **broom**.
+
+Here's the reasoning:
+- In s
+    Baseline answer (t=2485s): Based on the images provided, the object that could help you sweep some dust away is the **broom**.
+
+Here's the reasonin
+    Baseline answer (t=2490s): Based on the images provided, the object that could help you sweep some dust away is the **broom**.
+
+Here's the reasonin
+    Baseline answer (t=2496s): Based on the images provided, the object that could help you sweep some dust away is the **broom**.
+
+Here's the reasonin
+    Baseline answer (t=2502s): Based on the images provided, the object that could help you sweep some dust away is the **broom**.
+
+Here's the reasonin
+    Baseline answer (t=2508s): Based on the images provided, the object that could help you sweep some dust away is the **broom**.
+
+Here's the reasonin
+    Baseline answer (t=2513s): Based on the images provided, the object that could help you sweep some dust away is the **broom**.
+
+Here's the reasonin
+    Baseline answer (t=2519s): Based on the images provided, the object that could help you sweep some dust away is the **broom**.
+
+Here's the reasonin
+    Baseline answer (t=2525s): Based on the images provided, the object that could help you sweep some dust away is the **broom**.
+
+Here's the reasonin
+    Baseline answer (t=2530s): Based on the images provided, the object that could help you sweep some dust away is the **broom**.
+
+Here's the reasonin
+    Baseline answer (t=2536s): Based on the images provided, the object that could help you sweep some dust away is the **broom**.
+
+Here's the reasonin
+    Baseline answer (t=2542s): Based on the images provided, the object that could help you sweep some dust away is the **broom**.
+
+Here's the reasonin
+    Baseline answer (t=2548s): Based on the images provided, the object that could help you sweep some dust away is the **broom**.
+
+Here's the reasonin
+    Baseline answer (t=2553s): Based on the images provided, the object that could help sweep dust away is the **broom**.
+
+Here's the reasoning:
+- In t
+    Baseline answer (t=2559s): Based on the images provided, the object that could help sweep dust away is the **broom**.
+
+Here's the reasoning:
+
+1.  I
+    Baseline answer (t=2565s): Based on the images provided, the object that could help sweep dust away is the **broom**.
+
+Here's the reasoning:
+
+1.  I
+    Baseline answer (t=2570s): Based on the provided images, the object that could help sweep dust away is the **broom**.
+
+Here's the reasoning:
+
+1.  I
+    Baseline answer (t=2576s): Based on the images provided, the object that could help you sweep some dust away is the **broom**.
+
+Here's the reasonin
+    Baseline answer (t=2582s): Based on the images provided, the object that could help you sweep some dust away is the **broom**.
+
+Here's the reasonin
+    Baseline answer (t=2588s): Based on the images provided, the object that could help sweep dust away is the **broom**.
+
+Here's the reasoning:
+- In t
+    Baseline answer (t=2593s): Based on the images provided, the object that could help sweep dust away is the **broom**.
+
+Here's the reasoning:
+- In t
+    Baseline answer (t=2599s): Based on the images provided, the object that could help you sweep some dust away is the **rake**.
+
+Here's the reasoning
+    Baseline answer (t=2605s): Based on the images provided, the object that could help you sweep some dust away is the **broom**.
+
+Here's the reasonin
+    Baseline answer (t=2610s): Based on the images provided, the object that could help sweep dust away is the **broom**.
+
+Here's the reasoning:
+- In i
+    Baseline answer (t=2616s): Based on the images provided, the object that could help sweep dust away is the **broom**.
+
+Here's the reasoning:
+- In t
+    Baseline answer (t=2622s): Based on the images provided, the object that could help sweep dust away is the **rake**.
+
+Here's the reasoning:
+
+1.  In
+    Baseline answer (t=2628s): Based on the images provided, the object that could help sweep dust away is the **broom**.
+
+Here's the reasoning:
+
+1.  I
+    Baseline answer (t=2633s): Based on the images provided, the object that could help sweep dust away is the **broom**.
+
+Here's the reasoning:
+- In t
+    Baseline answer (t=2639s): Based on the images provided, the object that could help sweep dust away is the **broom**.
+
+Here's the reasoning:
+- In t
+    Baseline answer (t=2645s): Based on the images provided, the object that could help you sweep some dust away is the **broom**.
+
+Here's the reasonin
+    Baseline answer (t=2650s): Based on the provided images, the object that could help sweep dust away is the **broom**.
+
+Here's the reasoning:
+
+1.  I
+    Baseline answer (t=2656s): Based on the images provided, the object that could help sweep dust away is the **rake**.
+
+Here's the reasoning:
+- In th
+    Baseline answer (t=2662s): Based on the images provided, the object that could help you sweep some dust away is the **broom**.
+
+Here's the reasonin
+    Baseline answer (t=2668s): Based on the images provided, the object that could help sweep dust away is the **broom**.
+
+Here's the reasoning:
+- In t
+    Baseline answer (t=2673s): Based on the images provided, the object that could help sweep dust away is the **broom**.
+
+Here's the reasoning:
+- In t
+    Baseline answer (t=2679s): Based on the images provided, the object that could help sweep dust away is the **broom**.
+
+Here's the reasoning:
+- In t
+    Baseline answer (t=2685s): Based on the images provided, the object that could help sweep dust away is the **broom**.
+
+Here's the reasoning:
+- In t
+    Baseline answer (t=2690s): Based on the images provided, the object that could help sweep dust away is the **broom**.
+
+Here's the reasoning:
+- In t
+    Baseline answer (t=2696s): Based on the images provided, the object that could help sweep dust away is the **broom**.
+
+Here's the reasoning:
+- In t
+    Baseline answer (t=2702s): Based on the images provided, the object that could help sweep dust away is the **rake**.
+
+Here's the reasoning:
+
+1.  In
+    Baseline answer (t=2708s): Based on the provided images, the object that could help sweep dust away is the **broom**.
+
+Here's the reasoning:
+
+1.  I
+    Baseline answer (t=2713s): Based on the images provided, the object that could help sweep dust away is the **broom**.
+
+Here's the reasoning:
+
+1.  I
+    Baseline answer (t=2719s): Based on the images provided, the object that could help sweep dust away is the **broom**.
+
+Here's the reasoning:
+
+1.  I
+    Baseline answer (t=2725s): Based on the images provided, the object that could help sweep dust away is the **broom**.
+
+Here's the reasoning:
+
+1.  I
+    Baseline answer (t=2730s): Based on the images provided, the object that could help you sweep some dust away is the **broom**.
+
+Here's the reasonin
+    Hypo answer (t=2433s): Based on the images provided, the object that could help sweep dust away is the **pruning shears**.
+
+Here's the reasonin
+    Hypo answer (t=2439s): Based on the images provided, the object that could help you sweep some dust away is the **broom**.
+
+Here's the reasonin
+    Hypo answer (t=2445s): Based on the images provided, the object that could help you sweep some dust away is the **broom**.
+
+Here's the reasonin
+    Hypo answer (t=2450s): Based on the images provided, the object that could help you sweep some dust away is the **broom**.
+
+Here's the reasonin
+    Hypo answer (t=2456s): Based on the images provided, the object that could help you sweep some dust away is the **broom**.
+
+Here's the reasonin
+    Hypo answer (t=2462s): Based on the images provided, the object that could help you sweep some dust away is the **broom**.
+
+Here's the reasonin
+    Hypo answer (t=2468s): Based on the images provided, the object that could help you sweep some dust away is the **broom**.
+
+Here's the reasonin
+    Hypo answer (t=2473s): Based on the images provided, the object that could help sweep dust away is the **pruning shears** (also known as garden
+    Hypo answer (t=2479s): Based on the images provided, the object that could help you sweep some dust away is the **green-handled garden shears**
+    Hypo answer (t=2485s): Based on the images provided, the object that could help you sweep some dust away is the **green-handled garden shears**
+    Hypo answer (t=2490s): Based on the images provided, the object that could help sweep dust away is the **blue plastic tray**.
+
+Here's the reaso
+    Hypo answer (t=2496s): Based on the images provided, the object that could help sweep dust away is the **blue plastic tray**.
+
+Here's the reaso
+    Hypo answer (t=2502s): Based on the images provided, the most suitable object for sweeping dust away would be the **blue plastic tray**.
+
+Here'
+    Hypo answer (t=2508s): Based on the images provided, there is no object visible that is specifically designed or suitable for sweeping dust awa
+    Hypo answer (t=2513s): Based on the images provided, the object that could help sweep dust away is the **broom**.
+
+Here's the reasoning:
+
+1.  *
+    Hypo answer (t=2519s): Based on the images provided, there is no object visible that is specifically designed or suitable for sweeping dust awa
+    Hypo answer (t=2559s): Based on the images provided, the most suitable object to sweep dust away would be the **pruning shears** (or loppers) t
+    Hypo answer (t=2576s): Based on the images provided, the object that could help sweep dust away is the **long-handled tool** lying on the woode
+    Hypo answer (t=2582s): Based on the images provided, the object that could help sweep dust away is the **long-handled tool** (which appears to 
+    Hypo answer (t=2588s): Based on the images provided, the object that could help sweep dust away is the **long-handled tool** (which appears to 
+    Hypo answer (t=2593s): Based on the images provided, the object that could help sweep dust away is the **long-handled tool** (which appears to 
+    Hypo answer (t=2628s): Based on the images provided, the object that could help sweep dust away is the **broom**.
+
+Here's the reasoning:
+- In t
+    Hypo answer (t=2633s): Based on the images provided, the object that could help sweep dust away is the **broom**.
+
+Here's the reasoning:
+- In t
+    Hypo answer (t=2639s): Based on the images provided, the object that could help sweep dust away is the **broom**.
+
+Here's the reasoning:
+
+1.  I
+    Hypo answer (t=2685s): Based on the images provided, the object that could help sweep dust away is the **pruning shears** (or loppers) that the
+    Hypo answer (t=2690s): Based on the images provided, the most suitable object to sweep dust away would be the **pruning shears** (or loppers) t
+    Hypo answer (t=2696s): Based on the images provided, the object that could help sweep dust away is the long-handled tool, which appears to be a
+    Hypo answer (t=2713s): Based on the images provided, there is no object visible that is specifically designed or suitable for sweeping dust awa
+    Hypo answer (t=2725s): Based on the images provided, the object that could help sweep dust away is the **pruning shears** (or loppers) that the
+    Hypo answer (t=2730s): Based on the images provided, the most suitable object to sweep dust away would be the **pruning shears** (or loppers) t
+
+  Case 2: Object State Change Recognition
+  Q: When does the hedge shears and loppers changes their positions?
+  Duration: 308s, GT windows: 1
+  GT spans: ['320-324s']
+  GT answers: ["They're put on to the ground from the fence."]
+  BASELINE: F1=0.000, Preds=40, Hits=0/1, FP=40
+    Pred times: ['326s', '332s', '338s', '344s', '349s', '355s', '361s', '366s', '372s', '378s', '384s', '389s', '395s', '401s', '406s', '412s', '418s', '424s', '429s', '435s', '441s', '446s', '452s', '458s', '464s', '469s', '475s', '481s', '486s', '492s', '504s', '521s', '526s', '532s', '538s', '544s', '549s', '555s', '561s', '566s']
+  HYPO-B: F1=0.000, Preds=7, Hits=0/1, FP=7
+    Pred times: ['292s', '326s', '332s', '338s', '538s', '549s', '561s']
+  VERDICT: UNCHANGED (delta=+0.000)
+  [HARD CASE DETAIL]
+    Baseline answer (t=326s): The hedge shears and loppers change their positions when the person picks them up from the ground and places them on the
+    Baseline answer (t=332s): The hedge shears and loppers change their positions when the person picks them up from the ground and places them on the
+    Baseline answer (t=338s): The hedge shears and loppers change their positions when the person picks them up from the ground and places them on the
+    Baseline answer (t=344s): The hedge shears and loppers change their positions when the person picks them up from the ground and places them on the
+    Baseline answer (t=349s): The hedge shears and loppers change their positions when the person picks them up from the ground and places them on the
+    Baseline answer (t=355s): The hedge shears and loppers change their positions when the person picks them up from the ground and places them on the
+    Baseline answer (t=361s): The hedge shears and loppers change their positions when the person picks them up from the ground and places them on the
+    Baseline answer (t=366s): The hedge shears and loppers change their positions when the person picks them up from the ground and places them on the
+    Baseline answer (t=372s): The hedge shears and loppers change their positions when the person picks them up from the ground and places them on the
+    Baseline answer (t=378s): Based on the sequence of images, the hedge shears and loppers change their positions when the person picks them up from 
+    Baseline answer (t=384s): The hedge shears and loppers change their positions when the person picks them up from the ground and places them on the
+    Baseline answer (t=389s): The hedge shears and loppers change their positions when the person picks them up from the ground and places them on the
+    Baseline answer (t=395s): Based on the sequence of images, the hedge shears and loppers change their positions when the person picks them up from 
+    Baseline answer (t=401s): The hedge shears and loppers change their positions when the person picks them up from the ground and places them on the
+    Baseline answer (t=406s): The hedge shears and loppers change their positions when the person picks them up from the ground and places them on the
+    Baseline answer (t=412s): The hedge shears and loppers change their positions when the person picks them up from the ground and moves them to a di
+    Baseline answer (t=418s): The hedge shears and loppers change their positions when the person picks them up from the ground and places them on the
+    Baseline answer (t=424s): The hedge shears and loppers change their positions when the person picks them up from the ground and places them on the
+    Baseline answer (t=429s): The hedge shears and loppers change their positions when the person picks them up from the ground and places them on the
+    Baseline answer (t=435s): The hedge shears and loppers change their positions when the person picks them up from the ground and places them on the
+    Baseline answer (t=441s): The hedge shears and loppers change their positions when the person picks them up from the ground and places them on the
+    Baseline answer (t=446s): The hedge shears and loppers change their positions when the person picks them up from the ground and places them on the
+    Baseline answer (t=452s): The hedge shears and loppers change their positions when the person picks them up from the ground and places them on the
+    Baseline answer (t=458s): The hedge shears and loppers change their positions when the person picks them up from the ground and places them on the
+    Baseline answer (t=464s): The hedge shears and loppers change their positions when the person picks them up from the ground and places them on the
+    Baseline answer (t=469s): The hedge shears and loppers change their positions when the person picks them up from the ground and carries them to th
+    Baseline answer (t=475s): The hedge shears and loppers change their positions when the person picks them up from the ground and places them on the
+    Baseline answer (t=481s): The hedge shears and loppers change their positions when the person picks them up from the ground and places them on the
+    Baseline answer (t=486s): The hedge shears and loppers change their positions when the person picks them up from the ground and moves them to a di
+    Baseline answer (t=492s): The hedge shears and loppers change their positions when the person picks them up from the ground and places them on the
+    Baseline answer (t=504s): The hedge shears and loppers change their positions when the person picks them up from the ground and places them on the
+    Baseline answer (t=521s): The hedge shears and loppers change their positions when the person picks them up from the ground and places them on the
+    Baseline answer (t=526s): The hedge shears and loppers change their positions when the person picks them up from the ground and moves them to a di
+    Baseline answer (t=532s): The hedge shears and loppers change their positions when the person picks them up from the wooden deck and moves them to
+    Baseline answer (t=538s): The hedge shears and loppers change their positions when the person picks them up from the wooden deck and carries them 
+    Baseline answer (t=544s): The hedge shears and loppers change their positions when the person picks them up from the wooden deck and moves them to
+    Baseline answer (t=549s): The hedge shears and loppers change their positions when the person picks them up from the ground and moves them to a di
+    Baseline answer (t=555s): The hedge shears and loppers change their positions when the person picks them up from the ground and places them on the
+    Baseline answer (t=561s): The hedge shears and loppers change their positions when the person picks them up from the wooden deck and moves them to
+    Baseline answer (t=566s): The hedge shears and loppers change their positions when the person picks them up from the wooden deck and begins to use
+    Hypo answer (t=292s): Based on the provided images, the hedge shears and loppers do not change their positions.
+
+In the first image, the green
+    Hypo answer (t=326s): Based on the sequence of images, the hedge shears and loppers change their position when the person picks them up from t
+    Hypo answer (t=332s): Based on the sequence of images, the hedge shears and loppers change their position when the person moves them from the 
+    Hypo answer (t=338s): Based on the sequence of images, the hedge shears and loppers change their position when the person moves them from the 
+    Hypo answer (t=538s): Based on the provided images, the hedge shears and loppers change their positions between the second and third images.
+
+
+    Hypo answer (t=549s): Based on the sequence of images, the hedge shears and loppers change their positions when the person picks them up from 
+    Hypo answer (t=561s): Based on the sequence of images provided, the hedge shears and loppers change their positions during the following actio
+
+  Case 3: Ego Object State Change Recognition
+  Q: When does the door with window change its position relative to me?
+  Duration: 306s, GT windows: 1
+  GT spans: ['1426-1430s']
+  GT answers: ["The door with table comes closer to you as you're walking."]
+  BASELINE: F1=0.333, Preds=5, Hits=1/1, FP=4
+    Pred times: ['1431s', '1448s', '1454s', '1460s', '1483s']
+  HYPO-B: F1=0.000, Preds=0, Hits=0/1, FP=0
+  VERDICT: DEGRADED (delta=-0.333)
+
+--- Trigger Pattern Analysis ---
+  Total polling steps: 159
+  Baseline triggers:   98 (61.6%)
+  Hypothesis triggers: 37 (23.3%)

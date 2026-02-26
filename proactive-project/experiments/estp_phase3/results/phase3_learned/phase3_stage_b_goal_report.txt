@@ -1,0 +1,95 @@
+════════════════════════════════════════════════════════════════════════════════
+Phase III Stage A: Learned Trigger (D-features MLP)
+════════════════════════════════════════════════════════════════════════════════
+Generated: 2026-02-19 04:23
+Evaluation: Task-Type Leave-One-Out (TTLOO)
+Features:   gap, slope, volatility, since_last_trig, step_progress, stagnation
+Model:      MLP 6→32→16→1  |  Backend: PyTorch
+Target:     F1 > 0.222 (Adaptive-D Phase II in-sample)
+────────────────────────────────────────────────────────────────────────────────
+SECTION 1: AGGREGATE RESULTS (TTLOO)
+────────────────────────────────────────────────────────────────────────────────
+  Method                                 Avg F1   N cases
+  ───────────────────────────────────  ────────  ────────
+  Baseline (τ=0, no cd)                   0.141        53
+  D@2.8 + cd=12                           0.109        53
+  Adaptive-D (Phase II in-sample ref)     0.222         —
+  Adaptive-D (TTLOO, fair baseline)       0.196        53
+  MLP Stage A (TTLOO)                     0.202        53
+
+  Gate 1 — MLP vs Adaptive-D TTLOO (fair):
+    Delta F1:  mean=+0.006  95% CI=[-0.071, +0.090]
+    >>> BORDERLINE <<<
+  Gate 2 — MLP vs D@2.8: mean=+0.093  95% CI=[+0.016, +0.169]
+────────────────────────────────────────────────────────────────────────────────
+SECTION 2: PER TASK-TYPE RESULTS (TTLOO)
+────────────────────────────────────────────────────────────────────────────────
+  Task Type                                        n   BL F1  Adp-D F1   MLP F1   Δ(MLP-BL)    thr
+  ─────────────────────────────────────────────  ───  ──────  ────────  ───────  ──────────  ─────
+  Ego Object Localization                          5   0.090     0.179    0.424      +0.334   0.60
+  Ego Object State Change Recognition              5   0.123     0.172    0.413      +0.290   0.60
+  Text-Rich Understanding                          5   0.166     0.288    0.228      +0.063   0.60
+  Attribute Perception                             5   0.204     0.256    0.205      +0.002   0.55
+  Information Function                             5   0.077     0.143    0.200      +0.123   0.60
+  Object Function                                  5   0.121     0.073    0.200      +0.079   0.70
+  Task Understanding                               3   0.368     0.434    0.167      -0.202   0.75
+  Object Localization                              5   0.060     0.173    0.126      +0.066   0.60
+  Object Recognition                               5   0.114     0.143    0.119      +0.005   0.70
+  Object State Change Recognition                  5   0.082     0.050    0.100      +0.018   0.60
+  Action Recognition                               4   0.173     0.240    0.031      -0.142   0.60
+  Action Reasoning                                 1   0.500     0.000    0.000      -0.500   0.60
+────────────────────────────────────────────────────────────────────────────────
+SECTION 3: CASE-LEVEL RESULTS
+────────────────────────────────────────────────────────────────────────────────
+  Improved:  22/53 (42%)
+  Degraded:  24/53 (45%)
+  Unchanged: 7/53
+
+  Top 5 improved cases (MLP vs Baseline):
+    [Ego Object Localization                   ] Δ=+0.905  BL=0.095 → MLP=1.000
+    [Information Function                      ] Δ=+0.846  BL=0.154 → MLP=1.000
+    [Ego Object State Change Recognition       ] Δ=+0.611  BL=0.056 → MLP=0.667
+    [Ego Object Localization                   ] Δ=+0.583  BL=0.083 → MLP=0.667
+    [Object Function                           ] Δ=+0.500  BL=0.000 → MLP=0.500
+
+  Top 5 degraded cases (MLP vs Baseline):
+    [Task Understanding                        ] Δ=-0.882  BL=0.882 → MLP=0.000
+    [Action Reasoning                          ] Δ=-0.500  BL=0.500 → MLP=0.000
+    [Object Function                           ] Δ=-0.270  BL=0.270 → MLP=0.000
+    [Object Recognition                        ] Δ=-0.230  BL=0.230 → MLP=0.000
+    [Object State Change Recognition           ] Δ=-0.222  BL=0.222 → MLP=0.000
+────────────────────────────────────────────────────────────────────────────────
+SECTION 4: VIDEO-LEVEL SPLIT CHECK
+────────────────────────────────────────────────────────────────────────────────
+  Purpose: detect if model learned scene-specific biases.
+  Method:  within-type train/test split by video_uid (threshold=0.3 fixed).
+
+  Task Type                                      Vid-split F1
+  ─────────────────────────────────────────────  ────────────
+  Task Understanding                                    0.557  (TTLOO=0.167) 
+  Ego Object Localization                               0.247  (TTLOO=0.424) ⚠ large drop
+  Text-Rich Understanding                               0.237  (TTLOO=0.228) 
+  Object Recognition                                    0.192  (TTLOO=0.119) 
+  Action Recognition                                    0.126  (TTLOO=0.031) 
+  Object Function                                       0.109  (TTLOO=0.200) ⚠ large drop
+  Ego Object State Change Recognition                   0.084  (TTLOO=0.413) ⚠ large drop
+  Attribute Perception                                  0.069  (TTLOO=0.205) ⚠ large drop
+  Information Function                                  0.049  (TTLOO=0.200) ⚠ large drop
+  Object Localization                                   0.027  (TTLOO=0.126) ⚠ large drop
+  Object State Change Recognition                       0.000  (TTLOO=0.100) ⚠ large drop
+────────────────────────────────────────────────────────────────────────────────
+SECTION 5: FEATURE SUMMARY
+────────────────────────────────────────────────────────────────────────────────
+  Stage A features (6-dim):
+    0: gap              — raw logprob_gap (primary D signal)
+    1: slope            — gap change rate over last 5 steps
+    2: volatility       — gap std over last 10 steps
+    3: since_last_trig  — time since last trigger (norm 60s)
+    4: step_progress    — step / n_steps
+    5: stagnation       — log-norm time since last high-vol event
+
+  Stage B (next): + CLIP ViT-B/32 embedding (64-dim)
+  Stage C (next): + goal_state_gap_score (3-dim one-hot, VLM 10s)
+════════════════════════════════════════════════════════════════════════════════
+Report generated: 53 cases  |  12 TTLOO folds
+════════════════════════════════════════════════════════════════════════════════

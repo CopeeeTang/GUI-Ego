@@ -1,0 +1,30 @@
+================================================================================
+Phase 3 Hypothesis C: Confidence-Calibrated Two-Stage Filter
+================================================================================
+
+Cases tested: 2 (partial - terminated early due to conclusive null result)
+
+--- Key Finding: Saturated Confidence Scores ---
+  Confidence check after every 'yes' trigger returned score = 4 on ALL frames
+  With threshold >= 4, this means 0% filtering rate
+  The confidence filter passes everything through → identical to baseline
+
+--- Case 2 (completed baseline) ---
+  Task: Ego Object State Change Recognition
+  Q: When does the pair of gloves change their position relative to...
+  Duration: ~302s, GT windows: 7
+  BASELINE: F1=0.214, Preds=52, Hits=6/7, FP=43
+  HYPO-C: Expected identical to baseline (all conf=4 pass filter)
+
+--- Scientific Conclusion ---
+  The model's self-assessment confidence is UNINFORMATIVE:
+  - Always outputs 4 (exactly at threshold) regardless of visual evidence
+  - This confirms the yes-bias extends beyond trigger to self-evaluation
+  - LLM self-confidence rating cannot distinguish informative from non-informative frames
+  
+  VERDICT: REJECTED - Hypothesis C does not reduce false positives
+  
+--- Trigger Pattern Analysis ---
+  All confidence scores observed: 4 (>200 samples across 2 cases)
+  Filter rate: 0% (every triggered frame passes)
+  This makes Hypothesis C strictly worse than baseline (50% more compute, no benefit)

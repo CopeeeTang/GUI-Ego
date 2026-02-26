@@ -1,0 +1,254 @@
+======================================================================
+REASONING TRIGGER ON PROASSIST WTAG - ANALYSIS REPORT
+======================================================================
+Date: 2026-02-25
+Model: GPT-4o (Azure OpenAI)
+Dataset: WTAG validation (dialog-klg-sum_val_L4096_I1)
+Samples: 5
+Total API calls: 100
+
+----------------------------------------------------------------------
+PER-SAMPLE SUMMARY
+----------------------------------------------------------------------
+  Sample 0 (T48): Make pour-over coffee
+    Frames evaluated: 20/1226, GT talk: 96
+  Sample 6 (T54): Make pour-over coffee
+    Frames evaluated: 20/1376, GT talk: 55
+  Sample 12 (T6): Make mug cake
+    Frames evaluated: 20/752, GT talk: 25
+  Sample 15 (T47): Make pinwheels
+    Frames evaluated: 20/1333, GT talk: 59
+  Sample 18 (T7): Make pinwheels
+    Frames evaluated: 20/1015, GT talk: 25
+
+----------------------------------------------------------------------
+YES-BIAS ANALYSIS
+----------------------------------------------------------------------
+  Total frames evaluated: 100
+  GPT-4o 'yes' (needs help): 17 (17.0%)
+  GPT-4o 'no':               78 (78.0%)
+  GPT-4o 'uncertain':         5 (5.0%)
+  [Comparison: Qwen3-VL on ESTP-Bench showed 76-83% yes-bias]
+
+----------------------------------------------------------------------
+F1 AT DIFFERENT CONFIDENCE THRESHOLDS
+----------------------------------------------------------------------
+   Threshold  Precision     Recall       F1    TP    FP    FN    TN
+         0.0      0.529      0.180    0.269     9     8    41    42
+         0.1      0.529      0.180    0.269     9     8    41    42
+         0.2      0.529      0.180    0.269     9     8    41    42
+         0.3      0.529      0.180    0.269     9     8    41    42
+         0.4      0.529      0.180    0.269     9     8    41    42
+         0.5      0.529      0.180    0.269     9     8    41    42
+         0.6      0.529      0.180    0.269     9     8    41    42
+         0.7      0.529      0.180    0.269     9     8    41    42
+         0.8      0.529      0.180    0.269     9     8    41    42
+         0.9      0.571      0.160    0.250     8     6    42    44
+
+  Best F1: 0.269 at threshold=0.0
+  [Comparison: ESTP-Bench Reasoning Trigger F1=0.173, Baseline=0.225]
+  [Comparison: ProAssist w2t_prob best F1=0.373 at threshold=0.20]
+
+----------------------------------------------------------------------
+GPT-4o vs W2T_PROB COMPARISON
+----------------------------------------------------------------------
+  Correlation (talk_prob vs gpt_confidence): 0.031
+  Agreement rate: 68.0% (agree_talk=5, agree_notalk=63, disagree=32)
+  w2t_prob uncertain zone [0.1, 0.9]:
+    N=4, GPT-4o accuracy=75.0%
+
+----------------------------------------------------------------------
+PER-TASK ANALYSIS
+----------------------------------------------------------------------
+  Make pour-over coffee: P=0.500 R=0.250 F1=0.333 (TP=5 FP=5 FN=15 TN=15)
+  Make mug cake: P=1.000 R=0.100 F1=0.182 (TP=1 FP=0 FN=9 TN=10)
+  Make pinwheels: P=0.500 R=0.150 F1=0.231 (TP=3 FP=3 FN=17 TN=17)
+
+----------------------------------------------------------------------
+FRAME-LEVEL DETAIL (first 5 per sample)
+----------------------------------------------------------------------
+
+  Sample 0 (T48): Make pour-over coffee
+    Frame    0 (   0.0s): GT:---- | GPT:no         conf=0.00 | w2t_prob=0.9985
+      Action: unknown
+      Reasoning: The image does not show any relevant activity related to making pour-o
+    Frame    8 (   4.0s): GT:TALK | GPT:uncertain  conf=0.20 | w2t_prob=0.0256
+      Action: unknown
+      Reasoning: The image does not provide any visible context related to the pour-ove
+      GT content: Great! Making pour-over coffee is a bit of a process, but don't worry,
+    Frame  119 (  59.5s): GT:---- | GPT:no         conf=0.90 | w2t_prob=0.9993
+      Action: measuring water into a liquid measuring cup
+      Reasoning: The user appears to be correctly measuring water, which is part of the
+    Frame  229 ( 114.5s): GT:TALK | GPT:yes        conf=0.90 | w2t_prob=0.9939
+      Action: preparing tools and ingredients for pour-over coffee
+      Reasoning: The user appears to be at a transition point, as the tools and ingredi
+      GT content: While the water is boiling, let's assemble the filter cone. Can you fi
+    Frame  237 ( 118.5s): GT:---- | GPT:yes        conf=0.90 | w2t_prob=0.9978
+      Action: preparing to measure coffee beans or water
+      Reasoning: The user appears to be gathering ingredients and tools, possibly prepa
+
+  Sample 6 (T54): Make pour-over coffee
+    Frame    0 (   0.0s): GT:---- | GPT:yes        conf=0.90 | w2t_prob=0.9870
+      Action: preparing to measure water or coffee beans
+      Reasoning: The user appears to be at the beginning of the task or transitioning b
+    Frame   13 (   6.5s): GT:TALK | GPT:no         conf=0.90 | w2t_prob=0.0264
+      Action: Preparing to measure coffee beans using the kitchen scale
+      Reasoning: The user appears to be in the process of measuring coffee beans, which
+      GT content: Great! To start, let's boil some water. You can use the water that's i
+    Frame  137 (  68.5s): GT:---- | GPT:no         conf=0.90 | w2t_prob=1.0000
+      Action: measuring water into a liquid measuring cup
+      Reasoning: The user appears to be correctly measuring water into the measuring cu
+    Frame  206 ( 103.0s): GT:TALK | GPT:no         conf=0.90 | w2t_prob=0.9983
+      Action: assembling the filter cone and placing the dripper on the coffee mug
+      Reasoning: The user appears to be actively performing the step of assembling the 
+      GT content: Okay, now it's time to prepare the filter cone. Can you find the metal
+    Frame  252 ( 126.0s): GT:TALK | GPT:yes        conf=0.80 | w2t_prob=0.0001
+      Action: preparing to grind coffee beans or measure water
+      Reasoning: The user appears to be at a transition point, possibly preparing to gr
+      GT content: Yes, that's right. Before you put the paper filter in the cone, you ne
+
+  Sample 12 (T6): Make mug cake
+    Frame    0 (   0.0s): GT:---- | GPT:uncertain  conf=0.20 | w2t_prob=0.9980
+      Action: unknown
+      Reasoning: The image does not provide clear information about the user's current 
+    Frame    6 (   3.0s): GT:TALK | GPT:no         conf=0.90 | w2t_prob=0.2227
+      Action: preparing ingredients and tools for the mug cake
+      Reasoning: The user appears to be in the process of organizing ingredients and to
+      GT content: Great! Let's get started. First, place a cupcake liner inside the mug.
+    Frame   34 (  17.0s): GT:TALK | GPT:no         conf=0.90 | w2t_prob=0.9999
+      Action: preparing ingredients and setting up the workspace
+      Reasoning: The user appears to be organizing ingredients and tools, which is part
+      GT content: Now, add 2 tablespoons of flour.
+    Frame   76 (  38.0s): GT:---- | GPT:uncertain  conf=0.70 | w2t_prob=0.9999
+      Action: measuring or handling ingredients near the mixing bowl
+      Reasoning: The user appears to be handling ingredients near the mixing bowl, whic
+    Frame  107 (  53.5s): GT:TALK | GPT:no         conf=0.90 | w2t_prob=0.9863
+      Action: Adding sugar to the mixing bowl with flour
+      Reasoning: The user appears to be correctly measuring and adding sugar to the mix
+      GT content: Did you only add half a tablespoon of sugar? You'll need a total of on
+
+  Sample 15 (T47): Make pinwheels
+    Frame    0 (   0.0s): GT:---- | GPT:no         conf=1.00 | w2t_prob=0.9843
+      Action: not related to the pinwheel task
+      Reasoning: The user is not engaged in the pinwheel-making task but appears to be 
+    Frame   14 (   7.0s): GT:TALK | GPT:no         conf=0.90 | w2t_prob=0.0128
+      Action: reviewing recipe instructions on paper
+      Reasoning: The user appears to be reviewing the recipe instructions, which sugges
+      GT content: Great! To make pinwheels, we'll need to place a tortilla, spread some 
+    Frame  132 (  66.0s): GT:---- | GPT:yes        conf=0.90 | w2t_prob=0.9864
+      Action: user is preparing to spread or has partially spread nut butter on the 
+      Reasoning: The user appears to be in the middle of or preparing to spread nut but
+    Frame  138 (  69.0s): GT:TALK | GPT:no         conf=0.90 | w2t_prob=0.9935
+      Action: user is preparing to spread or has just spread an ingredient on the to
+      Reasoning: The user appears to be actively engaged in the task, with the tortilla
+      GT content: We're using peanut butter. Just take the knife and spread a layer onto
+    Frame  225 ( 112.5s): GT:TALK | GPT:no         conf=0.90 | w2t_prob=0.9996
+      Action: spreading nut butter on the tortilla
+      Reasoning: The user is actively performing the current step correctly by spreadin
+      GT content: Remember, leave about half an inch uncovered around the edges.
+
+  Sample 18 (T7): Make pinwheels
+    Frame    0 (   0.0s): GT:---- | GPT:uncertain  conf=0.30 | w2t_prob=0.9995
+      Action: unknown (no visible task-related activity)
+      Reasoning: The image does not show any clear evidence of the user performing the 
+    Frame   31 (  15.5s): GT:TALK | GPT:no         conf=0.90 | w2t_prob=0.0685
+      Action: preparing ingredients and tools for the task
+      Reasoning: The user appears to be organizing ingredients and tools, which is a pr
+      GT content: Great! To make pinwheels, we'll need a tortilla, some nut butter, jell
+    Frame   79 (  39.5s): GT:TALK | GPT:no         conf=0.90 | w2t_prob=0.9997
+      Action: gathering ingredients and tools
+      Reasoning: The user appears to be gathering ingredients and tools, which is a pre
+      GT content: Now, spread some nut butter onto the tortilla, covering the entire sur
+    Frame  103 (  51.5s): GT:---- | GPT:no         conf=0.90 | w2t_prob=0.9963
+      Action: User is holding a jar of nut butter and appears to be preparing to sco
+      Reasoning: The user is actively performing the current step of the task (preparin
+    Frame  120 (  60.0s): GT:TALK | GPT:yes        conf=0.90 | w2t_prob=0.9986
+      Action: user is holding a spoon and appears to be preparing to scoop an ingred
+      Reasoning: The user is holding a spoon, which is not listed as the correct tool (
+      GT content: Can you look down a bit more? I want to make sure you're spreading it 
+
+----------------------------------------------------------------------
+COMPLEMENTARITY ANALYSIS (stratified: 50 talk + 50 notalk frames)
+----------------------------------------------------------------------
+  GPT-4o alone:         P=0.529  R=0.180  F1=0.269
+  w2t_prob<0.2 alone:   P=0.947  R=0.360  F1=0.522
+  ORACLE (either):      P=0.719  R=0.460  F1=0.561  (+7.5% over w2t alone)
+  AND (both agree):     P=1.000  R=0.080  F1=0.148
+
+  On GT-TALK frames (50):
+    Both correct:        4  (8%)
+    GPT uniquely correct: 5 (10%)   <-- GPT adds unique value here
+    w2t uniquely correct:14 (28%)
+    Both wrong:          27 (54%)
+
+  On GT-NOTALK frames (50):
+    Both false alarm:    0
+    GPT-only FP:         8
+    w2t-only FP:         1
+    Both correct reject: 41
+
+----------------------------------------------------------------------
+RECALL BY ASSISTANCE TYPE
+----------------------------------------------------------------------
+  Type            N    GPT recall    w2t recall
+  confirmation   21     9.5%          66.7%     <-- w2t dominates
+  correction     14    21.4%           7.1%     <-- GPT is BETTER
+  instruction     1   100.0%           0.0%     <-- GPT uniquely correct
+  reminder        3    33.3%           0.0%     <-- GPT uniquely correct
+  other          11    18.2%          27.3%
+
+----------------------------------------------------------------------
+GPT-4o UNIQUELY CORRECT EXAMPLES (w2t_prob missed)
+----------------------------------------------------------------------
+  Frame 229 (114.5s): w2t=0.9939 (notalk)
+    GT: "While water is boiling, let's assemble the filter cone"
+    GPT: Detected transition between steps -> needs instruction
+
+  Frame 1205 (602.5s): w2t=0.9987 (notalk)
+    GT: "Let's move on to the final step"
+    GPT: Detected transition point
+
+  Frame 144 (72.0s): w2t=1.0000 (notalk)
+    GT: "Now, add the baking powder"
+    GPT: Detected transition between steps
+
+  Frame 120 (60.0s): w2t=0.9986 (notalk)
+    GT: "Can you look down? I want to make sure you're spreading evenly"
+    GPT: Noticed user using wrong tool (spoon instead of knife)
+
+----------------------------------------------------------------------
+CONCLUSIONS
+----------------------------------------------------------------------
+  1. GPT-4o Reasoning Trigger on WTAG:
+     F1=0.269 (best, at threshold=0.0)
+     [ESTP-Bench F1=0.173; WTAG is +55% better -> structured tasks help]
+
+  2. Yes-bias: 17.0% (LOW, opposite of ESTP-Bench)
+     [ESTP-Bench Qwen3-VL: 76-83% yes-bias -> overactive]
+     GPT-4o on WTAG: 17% yes-rate -> underactive (misses most talk frames)
+     Root cause: GPT interprets "user doing step correctly" as "no help needed"
+     but GT includes confirmations ("Great!", "Yes, that's right") that are
+     invisible to single-frame reasoning.
+
+  3. Correlation with w2t_prob: 0.031 (near zero)
+     The two signals are almost ORTHOGONAL:
+     - w2t_prob excels at CONFIRMATIONS (66.7% recall) -- learned from
+       temporal patterns in dialog history
+     - GPT-4o excels at CORRECTIONS (21.4% vs 7.1%) and step transitions
+       -- uses visual reasoning about task state
+     - ORACLE F1=0.561 (+7.5% over w2t alone) confirms complementary value
+
+  4. KEY INSIGHT: ProAssist mainly speaks for confirmations (42% of talks),
+     which require dialog context, not visual reasoning. GPT-4o's strength
+     is detecting ERRORS and TRANSITIONS, which are rarer but higher-value.
+
+  5. PRACTICAL RECOMMENDATION:
+     - w2t_prob remains the primary trigger (P=0.947, covers confirmations)
+     - GPT-4o reasoning adds value as a SECONDARY trigger specifically for:
+       a) Step transitions (w2t_prob=~1.0 but user is between steps)
+       b) Error detection (user using wrong tool/technique)
+     - Combined ORACLE F1=0.561 suggests ~7.5% improvement is achievable
+     - Cost: ~3.5s latency per frame, $0.003/frame -> impractical for
+       real-time but viable for offline analysis or low-frequency polling
+
+======================================================================
