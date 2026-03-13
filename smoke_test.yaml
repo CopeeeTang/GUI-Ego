@@ -1,0 +1,32 @@
+description: a100_smoke_test
+
+target:
+  service: sing
+  name: msrresrchvc
+  workspace_name: msraairwsws
+
+environment:
+  image: acpt/acpt-torch2.7.0-py3.10-cuda12.6-ubuntu22.04:latest
+  registry: msraairgroup.azurecr.io
+  setup:
+    - echo "=== Environment Check ==="
+
+jobs:
+- name: a100_smoke_test
+  sku: 80G1-A100
+  sla_tier: Premium
+  command:
+  - echo "=== GPU Info ==="
+  - nvidia-smi
+  - echo "=== PyTorch Check ==="
+  - python3 -c "import torch; print('CUDA available:', torch.cuda.is_available()); print('GPU count:', torch.cuda.device_count()); [print(f'GPU {i}:', torch.cuda.get_device_name(i)) for i in range(torch.cuda.device_count())]"
+  - echo "=== Disk Info ==="
+  - df -h
+  - echo "=== Done ==="
+  identity: managed
+  mpi: false
+  process_count_per_node: 1
+  submit_args:
+    env:
+      NCCL_DEBUG: INFO
+      _AZUREML_SINGULARITY_JOB_UAI: /subscriptions/762905fc-41fb-4bfb-8e41-478b86cb99ab/resourceGroups/system_yeyun/providers/Microsoft.ManagedIdentity/userAssignedIdentities/msraairwsid
